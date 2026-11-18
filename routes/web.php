@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CompetitionController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -39,6 +41,13 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('competitions/{competition}/duplicate', [CompetitionController::class, 'duplicate'])->name('competitions.duplicate');
 
     Route::resource('bank-accounts', BankAccountController::class);
+
+    Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
+    Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+
+    Route::resource('announcements', AnnouncementController::class);
+    Route::post('announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])->name('announcements.publish');
+    Route::post('announcements/{announcement}/unpublish', [AnnouncementController::class, 'unpublish'])->name('announcements.unpublish');
 });
 
 require __DIR__.'/auth.php';
