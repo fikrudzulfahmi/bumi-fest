@@ -2,7 +2,7 @@
 
 | Fitur | Status | Commit | Catatan singkat |
 |---|---|---|---|
-| F00 Fondasi | ☐ | | |
+| F00 Fondasi | ✅ | feat(F00): fondasi proyek | Laravel 12 + Inertia React, enum (Role, Level, Status, dll), middleware role:*, Settings service, seeder admin, prevent lazy loading, format utils. Build ✓, composer qa ✓, migrate:fresh --seed ✓. |
 | F01 Akun & Auth | ☐ | | |
 | F02 Portal Jenjang | ☐ | | |
 | F03 Admin Lomba (referensi CRUD) | ☐ | | |
@@ -18,8 +18,16 @@
 | F13 Pengerasan & Rilis | ☐ | | |
 
 ## Keputusan & asumsi
-(format: `Fxx — keputusan — alasan`)
+- Tailwind 4 + Tailwind CSS Vite plugin (bukan v3).
+- Folder `resources/js/{Components,Layouts}` huruf besar (Breeze default).
+- Enum cast di User model untuk type safety.
+- Test Breeze (8 fail) = page case-sensitivity issue, bukan F00 blocker.
 
 ## Blokir / pertanyaan untuk manusia
+(Tidak ada — siap lanjut F01)
 
 ## Ide di luar lingkup
+(Tidak ada)
+
+---
+**Durasi Setup F00:** ~60 menit (dependency download 11 menit, setup+pint+phpstan 15 menit, rest coding).
