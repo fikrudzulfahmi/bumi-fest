@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CompetitionController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
@@ -36,6 +37,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('competitions/{competition}/publish', [CompetitionController::class, 'publish'])->name('competitions.publish');
     Route::post('competitions/{competition}/archive', [CompetitionController::class, 'archive'])->name('competitions.archive');
     Route::post('competitions/{competition}/duplicate', [CompetitionController::class, 'duplicate'])->name('competitions.duplicate');
+
+    Route::resource('bank-accounts', BankAccountController::class);
 });
 
 require __DIR__.'/auth.php';
