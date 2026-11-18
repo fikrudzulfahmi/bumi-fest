@@ -51,6 +51,17 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        // AC-F01-08: Akun nonaktif ditolak dengan pesan Indonesia
+        $user = Auth::user();
+        if ($user && ! $user->is_active) {
+            Auth::guard('web')->logout();
+            $this->session()->invalidate();
+
+            throw ValidationException::withMessages([
+                'email' => 'Akun Anda tidak aktif. Silakan hubungi panitia.',
+            ]);
+        }
     }
 
     /**

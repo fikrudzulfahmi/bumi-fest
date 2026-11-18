@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Enums\Role;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -27,6 +28,7 @@ class User extends Authenticatable
         'preferred_level',
         'whatsapp',
         'is_active',
+        'privacy_consented_at',
     ];
 
     /**
@@ -51,6 +53,41 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => Role::class,
             'is_active' => 'boolean',
+            'privacy_consented_at' => 'datetime',
         ];
+    }
+
+    public function institution(): HasOne
+    {
+        return $this->hasOne(Institution::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === Role::Admin;
+    }
+
+    public function isJudge(): bool
+    {
+        return $this->role === Role::Judge;
+    }
+
+    public function isInstitution(): bool
+    {
+        return $this->role === Role::Institution;
+    }
+
+    /**
+     * Default landing page after login, per role.
+     */
+    public function homeRoute(): string
+    {
+        $role = $this->role;
+
+        return match ($role) {
+            Role::Admin => '/admin',
+            Role::Judge => '/juri',
+            default => '/portal',
+        };
     }
 }
