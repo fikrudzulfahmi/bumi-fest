@@ -16,11 +16,17 @@ class RegistrationMember extends Model
         'position',
     ];
 
+    /**
+     * @return BelongsTo<Registration, $this>
+     */
     public function registration(): BelongsTo
     {
         return $this->belongsTo(Registration::class);
     }
 
+    /**
+     * @return BelongsTo<Participant, $this>
+     */
     public function participant(): BelongsTo
     {
         return $this->belongsTo(Participant::class);

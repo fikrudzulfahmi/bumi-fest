@@ -32,7 +32,7 @@ class CreateInvoice
             }
 
             $subtotal = (int) $registration->fee;
-            $uniqueCode = $this->pickUniqueCode($subtotal);
+            $uniqueCode = app(PickUniqueCode::class)->handle($subtotal);
             $dueHours = (int) Settings::get('payment_due_hours', 48);
 
             // BR-07: total = jumlah biaya entri + kode unik 1–999;
@@ -63,38 +63,5 @@ class CreateInvoice
         event(new InvoiceCreated($invoice));
 
         return $invoice;
-    }
-
-    /**
-     * AC-F05-15 / BR-07: kode 1–999 unik per subtotal, dan total
-     * (subtotal + kode) tidak boleh sama dengan tagihan terbuka mana pun.
-     * Maks 20 percobaan.
-     */
-    private function pickUniqueCode(int $subtotal): int
-    {
-        $openInvoices = Invoice::open()->get(['subtotal', 'unique_code', 'total']);
-
-        $usedCodes = $openInvoices
-            ->where('subtotal', $subtotal)
-            ->pluck('unique_code')
-            ->all();
-
-        $usedTotals = $openInvoices->pluck('total')->all();
-
-        for ($i = 0; $i < 20; $i++) {
-            $candidate = random_int(1, 999);
-
-            if (in_array($candidate, $usedCodes, true)) {
-                continue;
-            }
-
-            if (in_array($subtotal + $candidate, $usedTotals, true)) {
-                continue;
-            }
-
-            return $candidate;
-        }
-
-        throw new BusinessRuleViolation('Tidak dapat menentukan kode pembayaran. Coba lagi nanti.');
     }
 }

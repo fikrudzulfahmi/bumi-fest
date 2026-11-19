@@ -57,6 +57,9 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * @return HasOne<Institution, $this>
+     */
     public function institution(): HasOne
     {
         return $this->hasOne(Institution::class);

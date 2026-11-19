@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CompetitionController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\CollectiveRegistrationController;
 use App\Http\Controllers\ParticipantController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
@@ -53,6 +54,15 @@ Route::middleware(['auth', 'verified', 'role:participant,institution'])->group(f
     Route::get('/portal/{level}/lomba/{competition:slug}/daftar', [RegistrationController::class, 'create'])->name('registrations.create');
     Route::post('/portal/{level}/lomba/{competition:slug}/daftar', [RegistrationController::class, 'store'])->name('registrations.store');
     Route::post('/portal/{level}/lomba/{competition:slug}/daftar/{registration}/kirim', [RegistrationController::class, 'submit'])->name('registrations.submit');
+});
+
+// F06: pendaftaran kolektif — hanya peran institution (AC-F06-01)
+Route::middleware(['auth', 'verified', 'role:institution'])->group(function () {
+    Route::get('/daftar-kolektif', [CollectiveRegistrationController::class, 'index'])->name('collective-registrations.index');
+    Route::get('/portal/{level}/lomba/{competition:slug}/daftar-kolektif', [CollectiveRegistrationController::class, 'create'])->name('collective-registrations.create');
+    Route::get('/portal/{level}/lomba/{competition:slug}/template', [CollectiveRegistrationController::class, 'template'])->name('collective-registrations.template');
+    Route::post('/portal/{level}/lomba/{competition:slug}/pratinjau', [CollectiveRegistrationController::class, 'preview'])->name('collective-registrations.preview');
+    Route::post('/portal/{level}/lomba/{competition:slug}/kirim-kolektif', [CollectiveRegistrationController::class, 'commit'])->name('collective-registrations.commit');
 });
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {

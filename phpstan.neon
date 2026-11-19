@@ -12,6 +12,10 @@ parameters:
         # Larastan belum mengenali enum cast pada model property secara akurat
         # (role di-cast ke App\Enums\Role via casts(), tapi PHPDoc tetap string).
         - '#Strict comparison using === between string and App\\Enums\\Role#'
+        - '#Strict comparison using !== between string and App\\Enums\\Role#'
         - '#Match arm comparison between string and App\\Enums\\Role#'
+        # Konsekuensi yang sama: Larastan menganggap perbandingan enum selalu false,
+        # sehingga abort_unless() tampak selalu gagal.
+        - '#Call to function abort_unless\(\) with false and 403 will always evaluate to false#'
         # Generic missing types (trade-off dengan Laravel Eloquent patterns)
         - '#return type with generic class Illuminate\\Database\\Eloquent\\Relations#'
