@@ -16,9 +16,11 @@ use App\Models\BankAccount;
 use App\Models\Competition;
 use App\Models\Participant;
 use App\Models\Registration;
+use App\Models\RegistrationDocument;
 use App\Models\RegistrationMember;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -382,6 +384,92 @@ class F05RegistrationTest extends TestCase
         }
 
         $this->assertCount(50, array_unique($totals));
+    }
+
+    // AC-F05-07/08: unggah dokumen wajib — hanya jpg/png/pdf ≤5MB, nama acak, disk privat
+    public function test_a_c_f05_08_document_upload_rules(): void
+    {
+        $user = $this->user();
+        $competition = $this->publishedCompetition([
+            'category' => CompetitionCategory::Individual,
+            'required_documents' => ['student_card'],
+        ]);
+        $participant = $this->ownParticipant($user);
+        $this->makeBankAccount();
+
+        $draft = $this->prepareDraft($user, $competition, $participant, consented: false);
+
+        // Upload PDF valid
+        $file = UploadedFile::fake()->createWithContent(
+            'kartu.pdf',
+            "%PDF-1.4\n1 0 obj\n<<>>\nendobj\n",
+            'application/pdf'
+        );
+
+        $this->actingAs($user)
+            ->post(route('registrations.upload-document', $draft), [
+                'participant_id' => $participant->id,
+                'document_type' => 'student_card',
+                'file' => $file,
+            ])
+            ->assertSessionHas('success');
+
+        $doc = RegistrationDocument::first();
+        $this->assertNotNull($doc);
+        $this->assertTrue(str_starts_with($doc->path, 'registrations/'));
+
+        // Upload berkas terlalu besar (6 MB) → ditolak
+        $big = UploadedFile::fake()->createWithContent(
+            'b.pdf',
+            '%PDF-1.4'.str_repeat('x', 6 * 1024 * 1024),
+            'application/pdf'
+        );
+        $this->actingAs($user)
+            ->post(route('registrations.upload-document', $draft), [
+                'participant_id' => $participant->id,
+                'document_type' => 'student_card',
+                'file' => $big,
+            ])
+            ->assertSessionHasErrors('file');
+    }
+
+    // BR-08 / AC-F05-14: swap anggota — bisa saat awaiting_verification, ditolak saat verified
+    public function test_a_c_f05_14_swap_member_allowed_then_locked(): void
+    {
+        $user = $this->user();
+        $competition = $this->publishedCompetition([
+            'category' => CompetitionCategory::Individual,
+            'quota' => 2,
+        ]);
+        $participantOut = $this->ownParticipant($user);
+        $participantIn = $this->ownParticipant($user);
+        $this->makeBankAccount();
+
+        $draft = $this->prepareDraft($user, $competition, $participantOut);
+        $submitted = app(SubmitRegistration::class)->handle($user, $draft);
+        $submitted->update(['status' => RegistrationStatus::AwaitingVerification]);
+
+        // Swap saat awaiting_verification → berhasil
+        $this->actingAs($user)
+            ->post(route('registrations.swap-member', $submitted), [
+                'out_participant_id' => $participantOut->id,
+                'in_participant_id' => $participantIn->id,
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('registration_members', [
+            'registration_id' => $submitted->id,
+            'participant_id' => $participantIn->id,
+        ]);
+
+        // Setelah verified → ditolak
+        $submitted->update(['status' => RegistrationStatus::Verified]);
+        $this->actingAs($user)
+            ->post(route('registrations.swap-member', $submitted), [
+                'out_participant_id' => $participantIn->id,
+                'in_participant_id' => $participantOut->id,
+            ])
+            ->assertSessionHasErrors('in_participant_id');
     }
 
     // Helper -------------------------------------------------

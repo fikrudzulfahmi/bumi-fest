@@ -5,10 +5,15 @@ namespace App\Http\Controllers;
 use App\Actions\Registration\CancelRegistration;
 use App\Actions\Registration\SaveRegistrationDraft;
 use App\Actions\Registration\SubmitRegistration;
+use App\Actions\Registration\SwapRegistrationMember;
+use App\Actions\Registration\UploadRegistrationDocument;
+use App\Enums\DocumentType;
 use App\Enums\RegistrationStatus;
+use App\Exceptions\BusinessRuleViolation;
 use App\Models\Competition;
 use App\Models\Participant;
 use App\Models\Registration;
+use App\Models\RegistrationDocument;
 use App\Models\RegistrationMember;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -99,6 +104,26 @@ class RegistrationController extends Controller
 
         $competition = $registration->competition;
 
+        $memberPivot = RegistrationMember::where('registration_id', $registration->id)
+            ->pluck('participant_id');
+
+        $memberRows = Participant::whereIn('id', $memberPivot)->get();
+        $docsByParticipant = RegistrationDocument::where('registration_id', $registration->id)
+            ->get()
+            ->groupBy('participant_id');
+
+        $members = $memberRows->map(function (Participant $p) use ($docsByParticipant) {
+            $docs = $docsByParticipant->get($p->id, collect());
+
+            return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'grade' => $p->grade,
+                'school_name' => $p->school_name,
+                'uploaded_documents' => $docs->pluck('type')->map(fn ($t) => $t->value ?? $t)->all(),
+            ];
+        })->values();
+
         return Inertia::render('registrations/Edit', [
             'registration' => [
                 'id' => $registration->id,
@@ -124,6 +149,7 @@ class RegistrationController extends Controller
                 ->forLevel($competition->level)
                 ->orderBy('name')
                 ->get(['id', 'name', 'grade', 'school_name']),
+            'members' => $members,
             'level' => $competition->level,
         ]);
     }
@@ -176,6 +202,70 @@ class RegistrationController extends Controller
             ->with('success', 'Pendaftaran dibatalkan.');
     }
 
+    /**
+     * AC-F05-07/08: unggah dokumen wajib per anggota.
+     */
+    public function uploadDocument(Registration $registration, Request $request): RedirectResponse
+    {
+        $this->authorizeEdit($registration);
+
+        $request->validate([
+            'participant_id' => ['required', 'integer', 'exists:participants,id'],
+            'document_type' => ['required', 'string', 'max:32'],
+            'file' => ['required', 'file', 'max:5120'],
+        ], [
+            'participant_id.exists' => 'Siswa tidak ditemukan.',
+            'file.max' => 'Ukuran berkas maksimal 5 MB.',
+        ]);
+
+        $type = $request->input('document_type');
+        $allowed = array_map(fn (DocumentType $d) => $d->value, DocumentType::cases());
+
+        if (! in_array($type, $allowed, true)) {
+            return back()->withErrors(['document_type' => 'Jenis dokumen tidak valid.']);
+        }
+
+        try {
+            app(UploadRegistrationDocument::class)->handle(
+                $registration,
+                $registration->competition,
+                (int) $request->input('participant_id'),
+                $type,
+                $request->file('file')
+            );
+        } catch (BusinessRuleViolation $e) {
+            return back()->withErrors(['file' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Dokumen berhasil diunggah.');
+    }
+
+    /**
+     * BR-08 / AC-F05-14: ganti anggota (swap) — tetap bisa meski entri
+     * awaiting_verification; ditolak bila verified (nilai terkunci).
+     */
+    public function swapMember(Registration $registration, Request $request): RedirectResponse
+    {
+        $this->authorizeSwap($registration);
+
+        $request->validate([
+            'out_participant_id' => ['required', 'integer', 'exists:participants,id'],
+            'in_participant_id' => ['required', 'integer', 'exists:participants,id'],
+        ]);
+
+        try {
+            app(SwapRegistrationMember::class)->handle(
+                $registration,
+                (int) $request->input('out_participant_id'),
+                (int) $request->input('in_participant_id')
+            );
+        } catch (BusinessRuleViolation $e) {
+            return back()->withErrors(['in_participant_id' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Anggota berhasil diganti.');
+    }
+
     private function ownDraft(int $ownerId, int $competitionId): ?Registration
     {
         return Registration::where('owner_id', $ownerId)
@@ -194,6 +284,11 @@ class RegistrationController extends Controller
         if (in_array($registration->status, $locked, true)) {
             abort(403, 'Entri telah terkunci setelah verifikasi dibuka.');
         }
+    }
+
+    private function authorizeSwap(Registration $registration): void
+    {
+        abort_unless($registration->owner_id === auth()->id(), 403);
     }
 
     private function validateRegistrationPayload(Request $request, Competition $competition): void

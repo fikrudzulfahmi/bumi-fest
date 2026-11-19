@@ -44,6 +44,8 @@ Route::middleware(['auth', 'verified', 'role:participant,institution'])->group(f
     Route::get('/pendaftaran', [RegistrationController::class, 'index'])->name('registrations.index');
     Route::get('/pendaftaran/{registration}', [RegistrationController::class, 'edit'])->name('registrations.edit');
     Route::post('/pendaftaran/{registration}/cancel', [RegistrationController::class, 'cancel'])->name('registrations.cancel');
+    Route::post('/pendaftaran/{registration}/dokumen', [RegistrationController::class, 'uploadDocument'])->name('registrations.upload-document');
+    Route::post('/pendaftaran/{registration}/ganti-anggota', [RegistrationController::class, 'swapMember'])->name('registrations.swap-member');
 });
 
 Route::middleware(['auth', 'verified', 'role:participant,institution'])->group(function () {
