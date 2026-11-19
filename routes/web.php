@@ -4,8 +4,10 @@ use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CompetitionController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\ParticipantController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RegistrationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -32,6 +34,23 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified', 'role:participant,institution'])->group(function () {
     Route::get('/portal', [PortalController::class, 'index'])->name('portal.index');
     Route::get('/portal/{level}', [PortalController::class, 'level'])->name('portal.level');
+
+    // F05 — siswa & pendaftaran
+    Route::get('/siswa', [ParticipantController::class, 'index'])->name('participants.index');
+    Route::post('/siswa', [ParticipantController::class, 'store'])->name('participants.store');
+    Route::put('/siswa/{participant}', [ParticipantController::class, 'update'])->name('participants.update');
+    Route::delete('/siswa/{participant}', [ParticipantController::class, 'destroy'])->name('participants.destroy');
+
+    Route::get('/pendaftaran', [RegistrationController::class, 'index'])->name('registrations.index');
+    Route::get('/pendaftaran/{registration}', [RegistrationController::class, 'edit'])->name('registrations.edit');
+    Route::post('/pendaftaran/{registration}/cancel', [RegistrationController::class, 'cancel'])->name('registrations.cancel');
+});
+
+Route::middleware(['auth', 'verified', 'role:participant,institution'])->group(function () {
+    // /portal/{level}/lomba/{competition:slug}/daftar — BR-01: level URL harus sesuai lomba
+    Route::get('/portal/{level}/lomba/{competition:slug}/daftar', [RegistrationController::class, 'create'])->name('registrations.create');
+    Route::post('/portal/{level}/lomba/{competition:slug}/daftar', [RegistrationController::class, 'store'])->name('registrations.store');
+    Route::post('/portal/{level}/lomba/{competition:slug}/daftar/{registration}/kirim', [RegistrationController::class, 'submit'])->name('registrations.submit');
 });
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
