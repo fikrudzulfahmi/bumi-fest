@@ -27,12 +27,14 @@ export default function Authenticated({
                             </div>
 
                             <div className="hidden space-x-6 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    Dashboard
-                                </NavLink>
+                                {user.role !== 'admin' && user.role !== 'judge' && (
+                                    <NavLink
+                                        href={route('dashboard')}
+                                        active={route().current('dashboard')}
+                                    >
+                                        Dasbor
+                                    </NavLink>
+                                )}
 
                                 {user.role === 'admin' && (
                                     <>
@@ -72,7 +74,22 @@ export default function Authenticated({
                                         >
                                             Lomba
                                         </NavLink>
+                                        <NavLink
+                                            href={route('admin.judges.index')}
+                                            active={route().current('admin.judges.*') || route().current('admin.rubrics.*')}
+                                        >
+                                            Juri
+                                        </NavLink>
                                     </>
+                                )}
+
+                                {user.role === 'judge' && (
+                                    <NavLink
+                                        href={route('judge.dashboard')}
+                                        active={route().current('judge.*')}
+                                    >
+                                        Dasbor Juri
+                                    </NavLink>
                                 )}
                             </div>
                         </div>
@@ -108,14 +125,14 @@ export default function Authenticated({
                                         <Dropdown.Link
                                             href={route('profile.edit')}
                                         >
-                                            Profile
+                                            Profil
                                         </Dropdown.Link>
                                         <Dropdown.Link
                                             href={route('logout')}
                                             method="post"
                                             as="button"
                                         >
-                                            Log Out
+                                            Keluar
                                         </Dropdown.Link>
                                     </Dropdown.Content>
                                 </Dropdown>
@@ -172,12 +189,73 @@ export default function Authenticated({
                     }
                 >
                     <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
-                        >
-                            Dashboard
-                        </ResponsiveNavLink>
+                        {user.role !== 'admin' && user.role !== 'judge' && (
+                            <ResponsiveNavLink
+                                href={route('dashboard')}
+                                active={route().current('dashboard')}
+                            >
+                                Dasbor
+                            </ResponsiveNavLink>
+                        )}
+
+                        {user.role === 'admin' && (
+                            <>
+                                <ResponsiveNavLink
+                                    href={route('admin.dashboard')}
+                                    active={route().current('admin.dashboard')}
+                                >
+                                    Dasbor
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('admin.registrations.index')}
+                                    active={route().current('admin.registrations.*')}
+                                >
+                                    Pendaftaran
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('admin.payments.index')}
+                                    active={route().current('admin.payments.*')}
+                                >
+                                    Pembayaran
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('admin.institutions.index')}
+                                    active={route().current('admin.institutions.*')}
+                                >
+                                    Lembaga
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('admin.users.index')}
+                                    active={route().current('admin.users.*')}
+                                >
+                                    Pengguna
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('admin.competitions.index')}
+                                    active={route().current('admin.competitions.*')}
+                                >
+                                    Lomba
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('admin.judges.index')}
+                                    active={
+                                        route().current('admin.judges.*') ||
+                                        route().current('admin.rubrics.*')
+                                    }
+                                >
+                                    Juri
+                                </ResponsiveNavLink>
+                            </>
+                        )}
+
+                        {user.role === 'judge' && (
+                            <ResponsiveNavLink
+                                href={route('judge.dashboard')}
+                                active={route().current('judge.*')}
+                            >
+                                Dasbor Juri
+                            </ResponsiveNavLink>
+                        )}
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">
@@ -192,14 +270,14 @@ export default function Authenticated({
 
                         <div className="mt-3 space-y-1">
                             <ResponsiveNavLink href={route('profile.edit')}>
-                                Profile
+                                Profil
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 method="post"
                                 href={route('logout')}
                                 as="button"
                             >
-                                Log Out
+                                Keluar
                             </ResponsiveNavLink>
                         </div>
                     </div>

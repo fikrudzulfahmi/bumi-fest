@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\Level;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -29,6 +30,15 @@ class AdminUserResource extends JsonResource
                 'name' => $this->institution->name,
             ]),
             'registrations_count' => $this->whenCounted('registrations'),
+            'assignments' => $this->whenLoaded('judgeAssignments', fn () => $this->judgeAssignments->map(fn ($assignment) => [
+                'id' => $assignment->id,
+                'competition' => [
+                    'id' => $assignment->competition->id,
+                    'name' => $assignment->competition->name,
+                    'level' => $assignment->competition->level,
+                    'level_label' => Level::tryFrom($assignment->competition->level)?->label(),
+                ],
+            ])->values()),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

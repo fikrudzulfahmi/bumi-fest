@@ -47,9 +47,10 @@ class RegistrationController extends Controller
             ->withQueryString();
 
         return Inertia::render('admin/registrations/Index', [
-            'registrations' => AdminRegistrationResource::collection($registrations)
-                ->response()
-                ->getData(true),
+            // Paginator apa adanya (data/links/total) — frontend butuh links.map & total.
+            'registrations' => $registrations->through(
+                fn (Registration $registration) => (new AdminRegistrationResource($registration))->resolve(),
+            ),
             'filters' => $this->filters($request),
             'levels' => array_map(fn (Level $l) => [
                 'value' => $l->value,

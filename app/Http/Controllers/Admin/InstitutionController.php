@@ -28,7 +28,10 @@ class InstitutionController extends Controller
             ->withQueryString();
 
         return Inertia::render('admin/institutions/Index', [
-            'institutions' => InstitutionResource::collection($institutions)->response()->getData(true),
+            // Paginator apa adanya (data/links/total) — frontend butuh links.map & total.
+            'institutions' => $institutions->through(
+                fn (Institution $institution) => (new InstitutionResource($institution))->resolve(),
+            ),
             'filters' => ['q' => $search],
         ]);
     }

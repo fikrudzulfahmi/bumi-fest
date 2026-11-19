@@ -204,8 +204,8 @@ class F09AdminTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('admin/registrations/Index')
             ->has('registrations.data', 15)
-            ->where('registrations.meta.total', 16)
-            ->where('registrations.meta.per_page', 15)
+            ->where('registrations.total', 16)
+            ->where('registrations.per_page', 15)
             ->where('filters.level', Level::SdMi->value));
 
         // Tanpa N+1: jumlah query konstan, tidak tumbuh mengikuti jumlah baris (15).

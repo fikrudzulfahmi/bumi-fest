@@ -5,17 +5,21 @@ use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CompetitionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InstitutionController;
+use App\Http\Controllers\Admin\JudgeController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\RegistrationController as AdminRegistrationController;
+use App\Http\Controllers\Admin\RubricController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CollectiveRegistrationController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\Judge\DashboardController as JudgeDashboardController;
 use App\Http\Controllers\ParticipantController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -28,8 +32,9 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+// Breeze stub diganti: arahkan ke dasbor sesuai peran agar tidak ada dasbor ganda.
+Route::get('/dashboard', function (Request $request) {
+    return redirect($request->user()->homeRoute());
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -112,12 +117,26 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('pembayaran/{invoice}/perpanjang', [PaymentController::class, 'extend'])->name('payments.extend');
     Route::get('pembayaran/{invoice}/bukti', [InvoiceController::class, 'proof'])->name('payments.proof');
 
+    // F10 — juri & rubrik penilaian
+    Route::get('juri', [JudgeController::class, 'index'])->name('judges.index');
+    Route::post('juri', [JudgeController::class, 'store'])->name('judges.store');
+    Route::post('juri/{judge}/tugaskan', [JudgeController::class, 'assign'])->name('judges.assign');
+    Route::delete('juri/penugasan/{assignment}', [JudgeController::class, 'unassign'])->name('judges.unassign');
+
+    Route::get('lomba/{competition}/rubrik', [RubricController::class, 'edit'])->name('rubrics.edit');
+    Route::put('lomba/{competition}/rubrik', [RubricController::class, 'update'])->name('rubrics.update');
+
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
 
     Route::resource('announcements', AnnouncementController::class);
     Route::post('announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])->name('announcements.publish');
     Route::post('announcements/{announcement}/unpublish', [AnnouncementController::class, 'unpublish'])->name('announcements.unpublish');
+});
+
+// F10 — panel juri
+Route::middleware(['auth', 'verified', 'role:judge'])->prefix('juri')->name('judge.')->group(function () {
+    Route::get('/', JudgeDashboardController::class)->name('dashboard');
 });
 
 require __DIR__.'/auth.php';

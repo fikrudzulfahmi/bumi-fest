@@ -6,6 +6,8 @@ use Database\Factories\CompetitionFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Competition extends Model
 {
@@ -59,5 +61,37 @@ class Competition extends Model
     public function scopeByLevel($query, string $level)
     {
         return $query->where('level', $level);
+    }
+
+    /**
+     * @return HasMany<RubricCriterion, $this>
+     */
+    public function rubricCriteria(): HasMany
+    {
+        return $this->hasMany(RubricCriterion::class)->orderBy('sort')->orderBy('id');
+    }
+
+    /**
+     * @return HasMany<JudgeAssignment, $this>
+     */
+    public function judgeAssignments(): HasMany
+    {
+        return $this->hasMany(JudgeAssignment::class);
+    }
+
+    /**
+     * @return HasMany<Registration, $this>
+     */
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class);
+    }
+
+    /**
+     * @return HasManyThrough<ScoreSheet, Registration, $this>
+     */
+    public function scoreSheets(): HasManyThrough
+    {
+        return $this->hasManyThrough(ScoreSheet::class, Registration::class);
     }
 }

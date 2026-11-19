@@ -54,9 +54,14 @@ export default function Index({ competitions, filters, levels }: Props) {
                                     <td className="px-4 py-2">{comp.level_label}</td>
                                     <td className="px-4 py-2">{comp.status_label}</td>
                                     <td className="px-4 py-2">
-                                        <Link href={route('admin.competitions.show', comp.id)}>
-                                            <button className="text-blue-600 hover:underline">Lihat</button>
-                                        </Link>
+                                        <div className="flex gap-3">
+                                            <Link href={route('admin.competitions.show', comp.id)}>
+                                                <button className="text-blue-600 hover:underline">Lihat</button>
+                                            </Link>
+                                            <Link href={route('admin.rubrics.edit', comp.id)}>
+                                                <button className="text-blue-600 hover:underline">Rubrik</button>
+                                            </Link>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

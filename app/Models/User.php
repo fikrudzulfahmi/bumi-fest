@@ -89,14 +89,22 @@ class User extends Authenticatable
         return $this->hasMany(Registration::class, 'owner_id');
     }
 
-    public function isAdmin(): bool
+    /**
+     * @return HasMany<JudgeAssignment, $this>
+     */
+    public function judgeAssignments(): HasMany
     {
-        return $this->role === Role::Admin;
+        return $this->hasMany(JudgeAssignment::class, 'judge_id');
     }
 
     public function isJudge(): bool
     {
         return $this->role === Role::Judge;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === Role::Admin;
     }
 
     public function isInstitution(): bool

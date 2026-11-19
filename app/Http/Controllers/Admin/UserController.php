@@ -35,7 +35,10 @@ class UserController extends Controller
             ->withQueryString();
 
         return Inertia::render('admin/users/Index', [
-            'users' => AdminUserResource::collection($users)->response()->getData(true),
+            // Paginator apa adanya (data/links/total) — frontend butuh links.map & total.
+            'users' => $users->through(
+                fn (User $user) => (new AdminUserResource($user))->resolve(),
+            ),
             'filters' => ['role' => $role, 'q' => $search],
             'roles' => array_map(fn (Role $r) => [
                 'value' => $r->value,
