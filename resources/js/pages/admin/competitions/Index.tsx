@@ -61,6 +61,9 @@ export default function Index({ competitions, filters, levels }: Props) {
                                             <Link href={route('admin.rubrics.edit', comp.id)}>
                                                 <button className="text-blue-600 hover:underline">Rubrik</button>
                                             </Link>
+                                            <Link href={route('admin.results.index', comp.id)}>
+                                                <button className="text-blue-600 hover:underline">Hasil</button>
+                                            </Link>
                                         </div>
                                     </td>
                                 </tr>

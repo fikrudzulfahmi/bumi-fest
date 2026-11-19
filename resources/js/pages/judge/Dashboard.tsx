@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 interface Assignment {
     id: number;
@@ -39,6 +39,15 @@ export default function Dashboard({ assignments }: Props) {
                             <span className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">
                                 {assignment.progress_percent}% terkunci
                             </span>
+                        </div>
+
+                        <div className="mt-3">
+                            <Link
+                                href={route('judge.entries', assignment.competition.id)}
+                                className="inline-flex min-h-11 items-center rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
+                            >
+                                Isi nilai entri
+                            </Link>
                         </div>
 
                         <div className="mt-3 h-2 w-full overflow-hidden rounded bg-gray-100">

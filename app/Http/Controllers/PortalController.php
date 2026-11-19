@@ -54,6 +54,7 @@ class PortalController extends Controller
                     'closes_at' => $competition->closes_at,
                     'quota' => $competition->quota,
                     'status' => $this->computeStatus($competition, $now),
+                    'results_published_at' => $competition->results_published_at?->toIso8601String(),
                 ];
             });
 
@@ -74,6 +75,51 @@ class PortalController extends Controller
             'level' => ['slug' => $level->slug(), 'label' => $level->label()],
             'competitions' => $competitions,
             'announcements' => $announcements,
+        ]);
+    }
+
+    /**
+     * AC-F11-11: daftar juara tampil di portal hanya setelah hasil terbit.
+     */
+    public function results(string $slug, Competition $competition): Response
+    {
+        $level = Level::fromSlug($slug);
+
+        abort_if($level === null, 404);
+        abort_unless($competition->level === $level->value, 404);
+        abort_if($competition->results_published_at === null, 404);
+
+        $winners = $competition->registrations()
+            ->whereNotNull('placement')
+            ->with(['members.participant'])
+            ->orderBy('placement')
+            ->orderBy('code')
+            ->get()
+            ->map(fn ($registration) => [
+                'id' => $registration->id,
+                'code' => $registration->code,
+                'team_name' => $registration->team_name,
+                'placement' => $registration->placement,
+                'names' => $registration->members
+                    ->map(fn ($member) => $member->participant?->name)
+                    ->filter()
+                    ->values()
+                    ->all(),
+                'school_name' => $registration->members
+                    ->map(fn ($member) => $member->participant?->school_name)
+                    ->filter()
+                    ->first(),
+            ]);
+
+        return Inertia::render('portal/Results', [
+            'level' => ['slug' => $level->slug(), 'label' => $level->label()],
+            'competition' => [
+                'id' => $competition->id,
+                'name' => $competition->name,
+                'slug' => $competition->slug,
+                'results_published_at' => $competition->results_published_at->toIso8601String(),
+            ],
+            'winners' => $winners,
         ]);
     }
 

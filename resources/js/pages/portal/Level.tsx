@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 interface Competition {
   id: number;
@@ -11,6 +11,7 @@ interface Competition {
   closes_at: string;
   quota: number | null;
   status: string;
+  results_published_at: string | null;
 }
 
 interface Announcement {
@@ -111,9 +112,22 @@ export default function Level({ level, competitions, announcements }: Props) {
                           )}
                         </div>
 
-                        <button className="w-full rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700">
-                          Lihat Detail
-                        </button>
+                        <div className="flex flex-col gap-2">
+                          <button className="w-full rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700">
+                            Lihat Detail
+                          </button>
+                          {comp.results_published_at && (
+                            <Link
+                              href={route('portal.results', [
+                                level.slug,
+                                comp.slug,
+                              ])}
+                              className="block w-full rounded border border-emerald-600 px-4 py-2 text-center text-emerald-700 hover:bg-emerald-50"
+                            >
+                              Lihat Hasil
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))

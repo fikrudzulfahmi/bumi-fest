@@ -8,12 +8,15 @@ use App\Http\Controllers\Admin\InstitutionController;
 use App\Http\Controllers\Admin\JudgeController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\RegistrationController as AdminRegistrationController;
+use App\Http\Controllers\Admin\ResultController;
 use App\Http\Controllers\Admin\RubricController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CollectiveRegistrationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\Judge\DashboardController as JudgeDashboardController;
+use App\Http\Controllers\Judge\EntryController as JudgeEntryController;
+use App\Http\Controllers\Judge\ScoreSheetController as JudgeScoreSheetController;
 use App\Http\Controllers\ParticipantController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
@@ -75,6 +78,7 @@ Route::middleware(['auth', 'verified', 'role:participant,institution'])->group(f
     Route::get('/portal/{level}/lomba/{competition:slug}/daftar', [RegistrationController::class, 'create'])->name('registrations.create');
     Route::post('/portal/{level}/lomba/{competition:slug}/daftar', [RegistrationController::class, 'store'])->name('registrations.store');
     Route::post('/portal/{level}/lomba/{competition:slug}/daftar/{registration}/kirim', [RegistrationController::class, 'submit'])->name('registrations.submit');
+    Route::get('/portal/{level}/hasil/{competition:slug}', [PortalController::class, 'results'])->name('portal.results');
 });
 
 // F06: pendaftaran kolektif — hanya peran institution (AC-F06-01)
@@ -126,6 +130,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('lomba/{competition}/rubrik', [RubricController::class, 'edit'])->name('rubrics.edit');
     Route::put('lomba/{competition}/rubrik', [RubricController::class, 'update'])->name('rubrics.update');
 
+    // F11 — penilaian & hasil
+    Route::get('lomba/{competition}/hasil', [ResultController::class, 'index'])->name('results.index');
+    Route::post('lomba/{competition}/hasil/hitung', [ResultController::class, 'compute'])->name('results.compute');
+    Route::post('lomba/{competition}/hasil/juara', [ResultController::class, 'placements'])->name('results.placements');
+    Route::post('lomba/{competition}/hasil/terbit', [ResultController::class, 'publish'])->name('results.publish');
+    Route::post('lomba/{competition}/hasil/buka-semua', [ResultController::class, 'unlockAll'])->name('results.unlock-all');
+    Route::post('nilai/{sheet}/buka', [ResultController::class, 'unlock'])->name('results.unlock');
+
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
 
@@ -134,9 +146,13 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('announcements/{announcement}/unpublish', [AnnouncementController::class, 'unpublish'])->name('announcements.unpublish');
 });
 
-// F10 — panel juri
+// F10–F11 — panel juri
 Route::middleware(['auth', 'verified', 'role:judge'])->prefix('juri')->name('judge.')->group(function () {
     Route::get('/', JudgeDashboardController::class)->name('dashboard');
+    Route::get('lomba/{competition}/entri', [JudgeEntryController::class, 'index'])->name('entries');
+    Route::get('entri/{registration}/nilai', [JudgeScoreSheetController::class, 'edit'])->name('scores.edit');
+    Route::put('entri/{registration}/nilai', [JudgeScoreSheetController::class, 'update'])->name('scores.update');
+    Route::post('entri/{registration}/kunci', [JudgeScoreSheetController::class, 'lock'])->name('scores.lock');
 });
 
 require __DIR__.'/auth.php';

@@ -84,6 +84,14 @@ class Registration extends Model
     }
 
     /**
+     * @return HasMany<ScoreSheet, $this>
+     */
+    public function scoreSheets(): HasMany
+    {
+        return $this->hasMany(ScoreSheet::class);
+    }
+
+    /**
      * Status yang menahan slot (BR-03).
      *
      * @return array<int, RegistrationStatus>
