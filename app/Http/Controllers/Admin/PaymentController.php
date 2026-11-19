@@ -8,16 +8,20 @@ use App\Actions\Payment\VerifyInvoice;
 use App\Enums\InvoiceStatus;
 use App\Enums\Level;
 use App\Exceptions\BusinessRuleViolation;
+use App\Exports\AdminPaymentExport;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\InvoiceResource;
 use App\Models\Competition;
 use App\Models\Invoice;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PaymentController extends Controller
 {
@@ -31,34 +35,9 @@ class PaymentController extends Controller
         $competitionId = $request->integer('competition_id');
         $search = trim($request->string('q')->toString());
 
-        $invoices = Invoice::query()
+        $invoices = $this->filteredQuery($request)
             ->with(['owner:id,name,email'])
             ->withCount('registrations')
-            ->when(
-                $status !== '' && in_array($status, array_column(InvoiceStatus::cases(), 'value'), true),
-                fn ($query) => $query->where('status', $status),
-                fn ($query) => $query->where('status', InvoiceStatus::AwaitingVerification)
-            )
-            ->when($level !== '', fn ($query) => $query->whereHas(
-                'registrations.competition',
-                fn ($q) => $q->where('level', $level)
-            ))
-            ->when($competitionId > 0, fn ($query) => $query->whereHas(
-                'registrations',
-                fn ($q) => $q->where('registrations.competition_id', $competitionId)
-            ))
-            ->when($search !== '', function ($query) use ($search) {
-                $digits = (int) preg_replace('/\D/', '', $search);
-
-                $query->where(function ($q) use ($search, $digits) {
-                    $q->where('number', 'like', '%'.$search.'%')
-                        ->orWhereHas('owner', fn ($o) => $o->where('name', 'like', '%'.$search.'%'));
-
-                    if ($digits > 0) {
-                        $q->orWhere('total', $digits);
-                    }
-                });
-            })
             ->orderBy('proof_uploaded_at')
             ->orderBy('id')
             ->get();
@@ -82,6 +61,19 @@ class PaymentController extends Controller
                 'rejected' => Invoice::where('status', InvoiceStatus::Rejected)->count(),
             ],
         ]);
+    }
+
+    /**
+     * AC-F09-03: ekspor pembayaran mengikuti filter aktif.
+     */
+    public function export(Request $request): BinaryFileResponse
+    {
+        $query = $this->filteredQuery($request)->with('owner:id,name,email');
+
+        return Excel::download(
+            new AdminPaymentExport($query),
+            'pembayaran-'.now('Asia/Jakarta')->format('Ymd-His').'.xlsx',
+        );
     }
 
     /**
@@ -155,5 +147,45 @@ class PaymentController extends Controller
         $dueAt = $invoice->fresh()->due_at ?? now('Asia/Jakarta');
 
         return back()->with('success', 'Jatuh tempo diperpanjang sampai '.$dueAt->format('d/m/Y H:i').' WIB.');
+    }
+
+    /**
+     * Filter tunggal untuk daftar & ekspor (AC-F07-05, AC-F09-03).
+     *
+     * @return Builder<Invoice>
+     */
+    private function filteredQuery(Request $request): Builder
+    {
+        $status = $request->string('status')->toString();
+        $level = $request->string('level')->toString();
+        $competitionId = $request->integer('competition_id');
+        $search = trim($request->string('q')->toString());
+
+        return Invoice::query()
+            ->when(
+                $status !== '' && in_array($status, array_column(InvoiceStatus::cases(), 'value'), true),
+                fn ($query) => $query->where('status', $status),
+                fn ($query) => $query->where('status', InvoiceStatus::AwaitingVerification)
+            )
+            ->when($level !== '', fn ($query) => $query->whereHas(
+                'registrations.competition',
+                fn ($q) => $q->where('level', $level)
+            ))
+            ->when($competitionId > 0, fn ($query) => $query->whereHas(
+                'registrations',
+                fn ($q) => $q->where('registrations.competition_id', $competitionId)
+            ))
+            ->when($search !== '', function ($query) use ($search) {
+                $digits = (int) preg_replace('/\D/', '', $search);
+
+                $query->where(function ($q) use ($search, $digits) {
+                    $q->where('number', 'like', '%'.$search.'%')
+                        ->orWhereHas('owner', fn ($o) => $o->where('name', 'like', '%'.$search.'%'));
+
+                    if ($digits > 0) {
+                        $q->orWhere('total', $digits);
+                    }
+                });
+            });
     }
 }

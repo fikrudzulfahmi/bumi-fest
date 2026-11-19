@@ -3,8 +3,12 @@
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CompetitionController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\InstitutionController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\RegistrationController as AdminRegistrationController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CollectiveRegistrationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ParticipantController;
@@ -78,6 +82,21 @@ Route::middleware(['auth', 'verified', 'role:institution'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    // F09 — dasbor & pengelolaan
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('pendaftaran', [AdminRegistrationController::class, 'index'])->name('registrations.index');
+    Route::get('pendaftaran/ekspor', [AdminRegistrationController::class, 'export'])->name('registrations.export');
+    Route::get('pendaftaran/{registration}', [AdminRegistrationController::class, 'show'])->name('registrations.show');
+    Route::post('pendaftaran/{registration}/batalkan', [AdminRegistrationController::class, 'cancel'])->name('registrations.cancel');
+    Route::patch('siswa/{participant}/nama', [AdminRegistrationController::class, 'correctName'])->name('participants.correct-name');
+
+    Route::get('lembaga', [InstitutionController::class, 'index'])->name('institutions.index');
+    Route::get('lembaga/{institution}', [InstitutionController::class, 'show'])->name('institutions.show');
+
+    Route::get('pengguna', [UserController::class, 'index'])->name('users.index');
+    Route::post('pengguna/{user}/aktif', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+
     Route::resource('competitions', CompetitionController::class);
     Route::post('competitions/{competition}/publish', [CompetitionController::class, 'publish'])->name('competitions.publish');
     Route::post('competitions/{competition}/archive', [CompetitionController::class, 'archive'])->name('competitions.archive');
@@ -87,6 +106,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // F07 — verifikasi pembayaran
     Route::get('pembayaran', [PaymentController::class, 'index'])->name('payments.index');
+    Route::get('pembayaran/ekspor', [PaymentController::class, 'export'])->name('payments.export');
     Route::post('pembayaran/{invoice}/terima', [PaymentController::class, 'verify'])->name('payments.verify');
     Route::post('pembayaran/{invoice}/tolak', [PaymentController::class, 'reject'])->name('payments.reject');
     Route::post('pembayaran/{invoice}/perpanjang', [PaymentController::class, 'extend'])->name('payments.extend');

@@ -63,6 +63,16 @@ export default function Index({ invoices, filters, levels, competitions, counts 
         router.get(route('admin.payments.index'), { ...form }, { preserveState: true, replace: true });
     };
 
+    const exportUrl = () => {
+        const params = new URLSearchParams();
+        Object.entries(form).forEach(([key, value]) => {
+            if (value !== '' && value !== 0) params.set(key, String(value));
+        });
+        const query = params.toString();
+
+        return route('admin.payments.export') + (query ? `?${query}` : '');
+    };
+
     const verify = (invoice: Invoice) => {
         setBusy(true);
         router.post(
@@ -217,6 +227,10 @@ export default function Index({ invoices, filters, levels, competitions, counts 
                     <PrimaryButton type="button" onClick={applyFilters}>
                         Terapkan
                     </PrimaryButton>
+
+                    <a href={exportUrl()}>
+                        <SecondaryButton type="button">Ekspor</SecondaryButton>
+                    </a>
                 </div>
 
                 {invoices.length === 0 && (

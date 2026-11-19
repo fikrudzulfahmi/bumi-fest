@@ -26,13 +26,54 @@ export default function Authenticated({
                                 </Link>
                             </div>
 
-                            <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                            <div className="hidden space-x-6 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink
                                     href={route('dashboard')}
                                     active={route().current('dashboard')}
                                 >
                                     Dashboard
                                 </NavLink>
+
+                                {user.role === 'admin' && (
+                                    <>
+                                        <NavLink
+                                            href={route('admin.dashboard')}
+                                            active={route().current('admin.dashboard')}
+                                        >
+                                            Dasbor
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('admin.registrations.index')}
+                                            active={route().current('admin.registrations.*')}
+                                        >
+                                            Pendaftaran
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('admin.payments.index')}
+                                            active={route().current('admin.payments.*')}
+                                        >
+                                            Pembayaran
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('admin.institutions.index')}
+                                            active={route().current('admin.institutions.*')}
+                                        >
+                                            Lembaga
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('admin.users.index')}
+                                            active={route().current('admin.users.*')}
+                                        >
+                                            Pengguna
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('admin.competitions.index')}
+                                            active={route().current('admin.competitions.*')}
+                                        >
+                                            Lomba
+                                        </NavLink>
+                                    </>
+                                )}
                             </div>
                         </div>
 
