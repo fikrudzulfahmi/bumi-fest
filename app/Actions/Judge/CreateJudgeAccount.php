@@ -41,6 +41,11 @@ class CreateJudgeAccount
 
         Password::sendResetLink(['email' => $judge->email]);
 
+        activity()
+            ->performedOn($judge)
+            ->withProperties(['role' => 'judge', 'email' => $judge->email])
+            ->log('Akun juri dibuat');
+
         return $judge;
     }
 }

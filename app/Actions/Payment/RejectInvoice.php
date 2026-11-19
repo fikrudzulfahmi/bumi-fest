@@ -48,6 +48,11 @@ class RejectInvoice
 
         event(new InvoiceRejected($invoice, $reason));
 
+        activity()
+            ->performedOn($invoice)
+            ->withProperties(['status' => 'rejected', 'number' => $invoice->number, 'reason' => $reason])
+            ->log('Tagihan ditolak');
+
         return $invoice->fresh() ?? $invoice;
     }
 }

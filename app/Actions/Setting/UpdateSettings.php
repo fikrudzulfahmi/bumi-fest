@@ -17,5 +17,9 @@ class UpdateSettings
                 Settings::set($key, $value);
             }
         });
+
+        activity()
+            ->withProperties(['keys' => array_keys($data)])
+            ->log('Pengaturan diperbarui');
     }
 }

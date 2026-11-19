@@ -79,6 +79,11 @@ class LockScoreSheet
             ])->save();
         });
 
+        activity()
+            ->performedOn($sheet)
+            ->withProperties(['status' => 'locked', 'total' => $total])
+            ->log('Lembar nilai dikunci');
+
         return $sheet->refresh();
     }
 }

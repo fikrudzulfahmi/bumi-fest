@@ -58,5 +58,10 @@ class SetPlacements
                     ->update(['placement' => $placement]);
             }
         });
+
+        activity()
+            ->performedOn($competition)
+            ->withProperties(['placements' => $placements])
+            ->log('Juara lomba ditetapkan');
     }
 }

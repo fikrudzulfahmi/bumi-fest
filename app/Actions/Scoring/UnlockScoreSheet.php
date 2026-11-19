@@ -34,6 +34,11 @@ class UnlockScoreSheet
             ])->save();
         });
 
+        activity()
+            ->performedOn($sheet)
+            ->withProperties(['status' => 'draft'])
+            ->log('Lembar nilai dibuka kembali');
+
         return $sheet->refresh();
     }
 
@@ -43,12 +48,21 @@ class UnlockScoreSheet
             throw new BusinessRuleViolation('Hasil lomba sudah diterbitkan. Nilai tidak bisa dibuka lagi.');
         }
 
-        ScoreSheet::query()
+        $sheets = ScoreSheet::query()
             ->whereIn('registration_id', $competition->registrations()->select('id'))
-            ->update([
-                'status' => ScoreSheetStatus::Draft->value,
+            ->get();
+
+        foreach ($sheets as $sheet) {
+            $sheet->forceFill([
+                'status' => ScoreSheetStatus::Draft,
                 'total' => null,
                 'locked_at' => null,
-            ]);
+            ])->save();
+
+            activity()
+                ->performedOn($sheet)
+                ->withProperties(['status' => 'draft'])
+                ->log('Lembar nilai dibuka kembali');
+        }
     }
 }

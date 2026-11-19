@@ -12,10 +12,17 @@ class UpdateBankAccount
      */
     public function handle(BankAccount $account, array $data): BankAccount
     {
-        return DB::transaction(function () use ($account, $data) {
+        $account = DB::transaction(function () use ($account, $data) {
             $account->update($data);
 
             return $account;
         });
+
+        activity()
+            ->performedOn($account)
+            ->withProperties(['bank_name' => $account->bank_name, 'account_number' => $account->account_number])
+            ->log('Rekening diperbarui');
+
+        return $account;
     }
 }

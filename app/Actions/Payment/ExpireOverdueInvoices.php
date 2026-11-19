@@ -45,6 +45,11 @@ class ExpireOverdueInvoices
                         ]);
 
                         event(new InvoiceExpired($locked));
+
+                        activity()
+                            ->performedOn($locked)
+                            ->withProperties(['status' => 'expired', 'number' => $locked->number])
+                            ->log('Tagihan kedaluwarsa');
                     });
 
                     $expired++;

@@ -70,6 +70,11 @@ class UserController extends Controller
 
         $user->update(['is_active' => ! $user->is_active]);
 
+        activity()
+            ->performedOn($user)
+            ->withProperties(['is_active' => $user->is_active])
+            ->log($user->is_active ? 'Akun pengguna diaktifkan' : 'Akun pengguna dinonaktifkan');
+
         return back()->with(
             'success',
             $user->is_active

@@ -52,6 +52,11 @@ class PublishResults
         GenerateCertificatesForCompetition::dispatch($competition->id);
         ResultsPublished::dispatch($competition);
 
+        activity()
+            ->performedOn($competition)
+            ->withProperties(['allow_incomplete' => $allowIncomplete])
+            ->log('Hasil lomba diterbitkan');
+
         return $competition;
     }
 }

@@ -1,0 +1,96 @@
+name: Deploy (cPanel)
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      fresh:
+        description: 'migrate:fresh + seed (instalasi pertama / pemulihan)'
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, intl, zip, mbstring, pdo_mysql, dom
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # Build aset frontend di runner (server shared hosting sering tanpa Node),
+      # lalu unggah hasilnya terpisah — sisanya lewat git pull di server.
+      - name: Build assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload built assets (public/build)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          source: 'public/build'
+          target: ${{ secrets.DEPLOY_PATH }}
+
+      - name: Deploy backend via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          script_stop: false
+          script: |
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            export PATH="$HOME/bin:/usr/local/bin:/usr/bin:/bin:/opt/cpanel/composer/bin:$PATH"
+
+            git pull origin "${{ github.ref_name }}"
+
+            if [ "${{ github.event.inputs.fresh }}" = "true" ]; then
+              php artisan migrate:fresh --force --seed
+            else
+              php artisan migrate --force
+            fi
+
+            php artisan route:clear && php artisan route:cache
+            php artisan config:clear && php artisan config:cache
+            php artisan view:clear && php artisan view:cache
+            php artisan storage:link 2>/dev/null || true
+            php artisan optimize
+
+      - name: Diagnostics (if failed)
+        if: failure()
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          script: |
+            set +e
+            cd "${{ secrets.DEPLOY_PATH }}" 2>/dev/null || { echo "::warning title=P1 PATH::folder deploy tidak ada"; exit 0; }
+            echo "::warning title=P1 PWD::$(pwd)"
+            echo "::warning title=P2 PHP::$(php -v 2>&1 | head -1)"
+            echo "::warning title=P3 LS::$(ls -a | tr '\n' ' ')"
+            echo "::warning title=P4 ARTISAN::$([ -f artisan ] && echo ada || echo TIDAK)"
+            echo "::warning title=P5 VENDOR::$([ -d vendor ] && echo ada || echo TIDAK)"
+            echo "::warning title=P6 ENV::$([ -f .env ] && echo ada || echo TIDAK)"
+            echo "::warning title=P7 APPKEY::$(grep -qE '^APP_KEY=base64:.+' .env 2>/dev/null && echo OK || echo KOSONG)"
+            echo "::warning title=P8 COMPOSER::$(command -v composer || echo TIDAK)"
+            exit 0

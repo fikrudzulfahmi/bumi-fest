@@ -80,6 +80,12 @@ export default function Authenticated({
                                         >
                                             Juri
                                         </NavLink>
+                                        <NavLink
+                                            href={route('admin.logs.index')}
+                                            active={route().current('admin.logs.*')}
+                                        >
+                                            Log
+                                        </NavLink>
                                     </>
                                 )}
 
@@ -244,6 +250,12 @@ export default function Authenticated({
                                     }
                                 >
                                     Juri
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('admin.logs.index')}
+                                    active={route().current('admin.logs.*')}
+                                >
+                                    Log
                                 </ResponsiveNavLink>
                             </>
                         )}

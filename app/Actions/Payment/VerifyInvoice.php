@@ -42,6 +42,11 @@ class VerifyInvoice
 
         event(new InvoiceVerified($invoice));
 
+        activity()
+            ->performedOn($invoice)
+            ->withProperties(['status' => 'paid', 'number' => $invoice->number])
+            ->log('Tagihan diterima');
+
         return $invoice->fresh() ?? $invoice;
     }
 }

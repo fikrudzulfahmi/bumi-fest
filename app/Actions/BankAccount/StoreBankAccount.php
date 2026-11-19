@@ -12,8 +12,15 @@ class StoreBankAccount
      */
     public function handle(array $data): BankAccount
     {
-        return DB::transaction(function () use ($data) {
+        $account = DB::transaction(function () use ($data) {
             return BankAccount::create($data);
         });
+
+        activity()
+            ->performedOn($account)
+            ->withProperties(['bank_name' => $account->bank_name, 'account_number' => $account->account_number])
+            ->log('Rekening ditambahkan');
+
+        return $account;
     }
 }

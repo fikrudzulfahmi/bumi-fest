@@ -43,6 +43,11 @@ class ExtendInvoiceDueDate
                 'status' => RegistrationStatus::AwaitingPayment->value,
             ]);
 
+            activity()
+                ->performedOn($locked)
+                ->withProperties(['status' => 'unpaid', 'number' => $locked->number, 'hours' => $hours])
+                ->log('Jatuh tempo tagihan diperpanjang');
+
             return $locked->fresh() ?? $locked;
         });
     }

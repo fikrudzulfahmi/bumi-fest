@@ -84,6 +84,11 @@ class GenerateCertificate
             'generated_at' => now('Asia/Jakarta'),
         ])->save();
 
+        activity()
+            ->performedOn($certificate)
+            ->withProperties(['type' => $type->value, 'number' => $certificate->number])
+            ->log('Sertifikat dibuat');
+
         return $certificate->refresh();
     }
 }

@@ -12,5 +12,9 @@ class DeleteBankAccount
         DB::transaction(function () use ($account) {
             $account->delete();
         });
+
+        activity()
+            ->withProperties(['bank_name' => $account->bank_name, 'account_number' => $account->account_number])
+            ->log('Rekening dihapus');
     }
 }

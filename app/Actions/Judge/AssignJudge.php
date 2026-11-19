@@ -32,10 +32,17 @@ class AssignJudge
                 throw new BusinessRuleViolation('Juri sudah ditugaskan pada lomba ini.');
             }
 
-            return JudgeAssignment::create([
+            $assignment = JudgeAssignment::create([
                 'judge_id' => $judge->id,
                 'competition_id' => $competitionId,
             ]);
+
+            activity()
+                ->performedOn($assignment)
+                ->withProperties(['judge' => $judge->name, 'competition_id' => $competitionId])
+                ->log('Juri ditugaskan ke lomba');
+
+            return $assignment;
         });
     }
 }

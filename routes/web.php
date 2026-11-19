@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
@@ -161,6 +162,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+
+    // F13 — riwayat aktivitas
+    Route::get('log', [ActivityLogController::class, 'index'])->name('logs.index');
 
     Route::resource('announcements', AnnouncementController::class);
     Route::post('announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])->name('announcements.publish');
