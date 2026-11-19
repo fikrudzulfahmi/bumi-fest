@@ -92,6 +92,14 @@ class Registration extends Model
     }
 
     /**
+     * @return HasMany<Certificate, $this>
+     */
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class);
+    }
+
+    /**
      * Status yang menahan slot (BR-03).
      *
      * @return array<int, RegistrationStatus>

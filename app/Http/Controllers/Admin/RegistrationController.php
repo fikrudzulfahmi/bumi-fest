@@ -120,7 +120,7 @@ class RegistrationController extends Controller
         $admin = $request->user();
 
         try {
-            (new CorrectParticipantName)->handle($admin, $participant, $validated['name']);
+            app(CorrectParticipantName::class)->handle($admin, $participant, $validated['name']);
         } catch (BusinessRuleViolation $e) {
             return back()->withErrors(['name' => $e->getMessage()]);
         }

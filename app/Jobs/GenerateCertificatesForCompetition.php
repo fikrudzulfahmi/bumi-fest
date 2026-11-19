@@ -9,13 +9,10 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 /**
- * AC-F11-10: pemicu pembuatan sertifikat setelah hasil terbit.
- * Pembuatan sertifikat sesungguhnya dikerjakan F12 (GenerateCertificateJob);
- * job ini hanya memilih entri terverifikasi sebagai sasaran, sehingga
- * penerbitan F11 tidak bergantung pada modul F12.
+ * AC-F12-02/04: setelah hasil terbit, antre satu GenerateCertificateJob
+ * per anggota entri verified. Dipanggil dari PublishResults (F11).
  */
 class GenerateCertificatesForCompetition implements ShouldQueue
 {
@@ -35,11 +32,13 @@ class GenerateCertificatesForCompetition implements ShouldQueue
         $registrations = Registration::query()
             ->where('competition_id', $this->competitionId)
             ->where('status', RegistrationStatus::Verified)
-            ->pluck('id');
+            ->with('members')
+            ->get();
 
-        Log::info('Sertifikat menunggu dibuat (F12)', [
-            'competition_id' => $this->competitionId,
-            'registrations' => $registrations->count(),
-        ]);
+        foreach ($registrations as $registration) {
+            foreach ($registration->members as $member) {
+                GenerateCertificateJob::dispatch($registration->id, $member->participant_id);
+            }
+        }
     }
 }

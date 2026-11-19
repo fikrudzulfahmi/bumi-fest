@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Database\Factories\InstitutionFactory;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * @property int $id
@@ -18,6 +21,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Institution extends Model
 {
+    /** @use HasFactory<InstitutionFactory> */
+    use HasFactory;
+
     protected $fillable = ['user_id', 'name', 'npsn', 'city'];
 
     protected function casts(): array
@@ -36,5 +42,13 @@ class Institution extends Model
     public function participants(): HasMany
     {
         return $this->hasMany(Participant::class);
+    }
+
+    /**
+     * @return HasManyThrough<Certificate, Participant, $this>
+     */
+    public function certificates(): HasManyThrough
+    {
+        return $this->hasManyThrough(Certificate::class, Participant::class);
     }
 }

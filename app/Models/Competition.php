@@ -80,6 +80,22 @@ class Competition extends Model
     }
 
     /**
+     * @return HasMany<CertificateTemplate, $this>
+     */
+    public function certificateTemplates(): HasMany
+    {
+        return $this->hasMany(CertificateTemplate::class);
+    }
+
+    /**
+     * @return HasManyThrough<Certificate, Registration, $this>
+     */
+    public function certificates(): HasManyThrough
+    {
+        return $this->hasManyThrough(Certificate::class, Registration::class, 'competition_id', 'registration_id');
+    }
+
+    /**
      * @return HasMany<Registration, $this>
      */
     public function registrations(): HasMany

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\BankAccountController;
+use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CompetitionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InstitutionController;
@@ -12,6 +13,8 @@ use App\Http\Controllers\Admin\ResultController;
 use App\Http\Controllers\Admin\RubricController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\CollectiveRegistrationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\Judge\DashboardController as JudgeDashboardController;
@@ -34,6 +37,11 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
+
+// F12 — verifikasi sertifikat publik (throttle: 60/menit)
+Route::get('/verifikasi/{code}', [CertificateVerificationController::class, 'show'])
+    ->middleware('throttle:60,1')
+    ->name('certificates.verify');
 
 // Breeze stub diganti: arahkan ke dasbor sesuai peran agar tidak ada dasbor ganda.
 Route::get('/dashboard', function (Request $request) {
@@ -65,6 +73,11 @@ Route::middleware(['auth', 'verified', 'role:participant,institution'])->group(f
     // F07 — tagihan & bukti pembayaran
     Route::get('/tagihan', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::post('/tagihan/{invoice}/bukti', [InvoiceController::class, 'uploadProof'])->name('invoices.upload-proof');
+
+    // F12 — sertifikat
+    Route::get('/sertifikat', [CertificateController::class, 'index'])->name('certificates.index');
+    Route::get('/sertifikat/{certificate}/unduh', [CertificateController::class, 'download'])->name('certificates.download');
+    Route::get('/sertifikat/unduh-semua', [CertificateController::class, 'downloadAll'])->name('certificates.download-all');
 });
 
 // F07: detail & pratinjau bukti — otorisasi lewat InvoicePolicy (pemilik atau admin)
@@ -137,6 +150,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('lomba/{competition}/hasil/terbit', [ResultController::class, 'publish'])->name('results.publish');
     Route::post('lomba/{competition}/hasil/buka-semua', [ResultController::class, 'unlockAll'])->name('results.unlock-all');
     Route::post('nilai/{sheet}/buka', [ResultController::class, 'unlock'])->name('results.unlock');
+
+    // F12 — sertifikat
+    Route::get('lomba/{competition}/sertifikat', [AdminCertificateController::class, 'index'])->name('certificates.index');
+    Route::post('lomba/{competition}/sertifikat/template', [AdminCertificateController::class, 'store'])->name('certificates.template.store');
+    Route::get('lomba/{competition}/sertifikat/pratinjau', [AdminCertificateController::class, 'preview'])->name('certificates.preview');
+    Route::get('sertifikat/template/{template}/gambar', [AdminCertificateController::class, 'image'])->name('certificates.image');
+    Route::post('sertifikat/{certificate}/regenerasi', [AdminCertificateController::class, 'regenerate'])->name('certificates.regenerate');
+    Route::get('sertifikat/{certificate}/unduh', [AdminCertificateController::class, 'download'])->name('certificates.download');
 
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
