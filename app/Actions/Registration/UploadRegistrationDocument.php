@@ -8,6 +8,7 @@ use App\Models\Participant;
 use App\Models\Registration;
 use App\Models\RegistrationDocument;
 use App\Models\RegistrationMember;
+use App\Services\Upload\FileValidator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
@@ -78,40 +79,10 @@ class UploadRegistrationDocument
      */
     private function assertFileValid(UploadedFile $file): void
     {
-        $extension = strtolower((string) $file->getClientOriginalExtension());
-        $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
-
-        if (! in_array($extension, $allowed, true)) {
-            throw new BusinessRuleViolation('Berkas hanya boleh jpg, png, atau pdf.');
-        }
-
-        if ($file->getSize() > 5 * 1024 * 1024) {
-            throw new BusinessRuleViolation('Ukuran berkas maksimal 5 MB.');
-        }
-
-        $mimeType = (string) $file->getClientMimeType();
-        $mimeAllowed = ['image/jpeg', 'image/png', 'application/pdf'];
-
-        if (! in_array($mimeType, $mimeAllowed, true)) {
-            // Verifikasi MIME asli dari isi berkas (cegah ekstensi palsu)
-            $detected = (new \finfo(FILEINFO_MIME_TYPE))->file($file->getRealPath());
-            if (! in_array($detected, $mimeAllowed, true)) {
-                throw new BusinessRuleViolation('Jenis berkas tidak valid.');
-            }
-        }
-
-        if ($extension === 'pdf') {
-            $realPath = $file->getRealPath();
-
-            // Pada upload nyata getRealPath() selalu terbaca. Pada berkas fake
-            // (test) path bisa terdetach; validasi magic-byte hanya bila bisa dibaca.
-            if (is_string($realPath) && is_readable($realPath)) {
-                $head = (string) file_get_contents($realPath, false, null, 0, 5);
-
-                if ($head !== '%PDF-') {
-                    throw new BusinessRuleViolation('File PDF tidak valid.');
-                }
-            }
-        }
+        FileValidator::validate(
+            $file,
+            FileValidator::documentExtensions(),
+            FileValidator::documentMimes(),
+        );
     }
 }

@@ -3,8 +3,10 @@
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CompetitionController;
+use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\CollectiveRegistrationController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ParticipantController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
@@ -47,6 +49,16 @@ Route::middleware(['auth', 'verified', 'role:participant,institution'])->group(f
     Route::post('/pendaftaran/{registration}/cancel', [RegistrationController::class, 'cancel'])->name('registrations.cancel');
     Route::post('/pendaftaran/{registration}/dokumen', [RegistrationController::class, 'uploadDocument'])->name('registrations.upload-document');
     Route::post('/pendaftaran/{registration}/ganti-anggota', [RegistrationController::class, 'swapMember'])->name('registrations.swap-member');
+
+    // F07 — tagihan & bukti pembayaran
+    Route::get('/tagihan', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::post('/tagihan/{invoice}/bukti', [InvoiceController::class, 'uploadProof'])->name('invoices.upload-proof');
+});
+
+// F07: detail & pratinjau bukti — otorisasi lewat InvoicePolicy (pemilik atau admin)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/tagihan/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+    Route::get('/tagihan/{invoice}/bukti', [InvoiceController::class, 'proof'])->name('invoices.proof');
 });
 
 Route::middleware(['auth', 'verified', 'role:participant,institution'])->group(function () {
@@ -72,6 +84,13 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('competitions/{competition}/duplicate', [CompetitionController::class, 'duplicate'])->name('competitions.duplicate');
 
     Route::resource('bank-accounts', BankAccountController::class);
+
+    // F07 — verifikasi pembayaran
+    Route::get('pembayaran', [PaymentController::class, 'index'])->name('payments.index');
+    Route::post('pembayaran/{invoice}/terima', [PaymentController::class, 'verify'])->name('payments.verify');
+    Route::post('pembayaran/{invoice}/tolak', [PaymentController::class, 'reject'])->name('payments.reject');
+    Route::post('pembayaran/{invoice}/perpanjang', [PaymentController::class, 'extend'])->name('payments.extend');
+    Route::get('pembayaran/{invoice}/bukti', [InvoiceController::class, 'proof'])->name('payments.proof');
 
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
