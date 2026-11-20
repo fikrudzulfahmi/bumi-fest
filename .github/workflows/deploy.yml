@@ -62,6 +62,19 @@ jobs:
 
             git pull origin "${{ github.ref_name }}"
 
+            # APP_KEY wajib ada; tanpa ini route web (session/encryption) → 500.
+            grep -qE '^APP_KEY=base64:.+' .env 2>/dev/null || php artisan key:generate --force
+            php artisan config:clear
+
+            # Composer: cari biner (PATH SSH minim), fallback ke composer.phar.
+            COMPOSER="$(command -v composer || true)"
+            if [ -z "$COMPOSER" ] && [ -f "$HOME/composer.phar" ]; then COMPOSER="php $HOME/composer.phar"; fi
+            if [ -z "$COMPOSER" ]; then
+              echo "::error title=COMPOSER::composer tidak ditemukan — pasang manual di server"
+              exit 1
+            fi
+            $COMPOSER install --no-dev --optimize-autoloader --no-interaction
+
             if [ "${{ github.event.inputs.fresh }}" = "true" ]; then
               php artisan migrate:fresh --force --seed
             else
