@@ -23,18 +23,24 @@ fi
 
 # --- 2) Normalisasi key (3 bentuk) + validasi ---
 mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+# ssh-keygen MENOLAK membaca key yang permission-nya terlalu terbuka (0644).
+umask 077
 RAW=$(printf '%s' "$SSH_KEY" | tr -d '\r')
 OK=0
 FMT=""
 
 if printf '%s' "$RAW" | head -c 30 | grep -q -- '-----BEGIN'; then
   printf '%s\n' "$RAW" > /tmp/k1
+  chmod 600 /tmp/k1
   if ssh-keygen -y -f /tmp/k1 >/dev/null 2>&1; then cp /tmp/k1 ~/.ssh/deploy_key; OK=1; FMT="PEM-utuh"; fi
 fi
 
 if [ "$OK" = 0 ]; then
-  if printf '%s' "$RAW" | base64 -d > /tmp/k2 2>/dev/null && ssh-keygen -y -f /tmp/k2 >/dev/null 2>&1; then
-    cp /tmp/k2 ~/.ssh/deploy_key; OK=1; FMT="base64(file)"; fi
+  if printf '%s' "$RAW" | base64 -d > /tmp/k2 2>/dev/null; then
+    chmod 600 /tmp/k2
+    if ssh-keygen -y -f /tmp/k2 >/dev/null 2>&1; then cp /tmp/k2 ~/.ssh/deploy_key; OK=1; FMT="base64(file)"; fi
+  fi
 fi
 
 if [ "$OK" = 0 ]; then
@@ -42,6 +48,7 @@ if [ "$OK" = 0 ]; then
     printf '%s' "$RAW" | tr -d '\n' | fold -w 70
     echo "-----END OPENSSH PRIVATE KEY-----"; } > /tmp/k3
   printf '\n' >> /tmp/k3
+  chmod 600 /tmp/k3
   if ssh-keygen -y -f /tmp/k3 >/dev/null 2>&1; then cp /tmp/k3 ~/.ssh/deploy_key; OK=1; FMT="body->dibungkus"; fi
 fi
 
