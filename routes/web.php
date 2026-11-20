@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\CollectiveRegistrationController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\Judge\DashboardController as JudgeDashboardController;
 use App\Http\Controllers\Judge\EntryController as JudgeEntryController;
@@ -25,19 +26,10 @@ use App\Http\Controllers\ParticipantController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
-use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::get('/', HomeController::class)->name('home');
 
 // F12 — verifikasi sertifikat publik (throttle: 60/menit)
 Route::get('/verifikasi/{code}', [CertificateVerificationController::class, 'show'])

@@ -4,6 +4,7 @@ use App\Enums\Role;
 use App\Models\Announcement;
 use App\Models\Competition;
 use App\Models\User;
+use App\Services\Settings\Settings;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Carbon;
 
@@ -178,5 +179,21 @@ describe('F02 — Portal Jenjang & Beranda', function () {
 
         // Query count harus < 20 (tanpa N+1 idealnya ~5-10 query)
         expect($queryCount)->toBeLessThan(20);
+    });
+
+    test('beranda publik menampilkan nama acara dan lomba published tanpa login', function () {
+        Settings::set('event_name', 'Bumi Fest 2026');
+        Competition::factory()->published()->sdMi()->create(['name' => 'Lomba Mewarnai']);
+        Competition::factory()->draft()->sdMi()->create(['name' => 'Lomba Rahasia']);
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('public/Home')
+            ->where('event_name', 'Bumi Fest 2026')
+            ->has('competitions', 1)
+            ->where('competitions.0.name', 'Lomba Mewarnai')
+        );
     });
 });
