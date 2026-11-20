@@ -46,7 +46,18 @@ if [ "$OK" = 0 ]; then
 fi
 
 if [ "$OK" = 0 ]; then
-  echo "::error title=SSH_KEY RUSAK::Secret SSH_KEY tidak valid/terpotong. Di server: cat ~/.ssh/deploy | base64 -w0, paste UTUH."
+  echo "::error title=SSH_KEY RUSAK::Secret SSH_KEY tidak valid/terpotong."
+  ERR1=$(ssh-keygen -y -f /tmp/k1 2>&1 | head -c 300 | tr '\n' ' ')
+  echo "::error title=DIAG key1::${ERR1:-<kosong>}"
+  if [ -f /tmp/k2 ]; then
+    ERR2=$(ssh-keygen -y -f /tmp/k2 2>&1 | head -c 300 | tr '\n' ' ')
+    echo "::error title=DIAG key2::${ERR2:-<kosong>}"
+  fi
+  if [ -f /tmp/k3 ]; then
+    ERR3=$(ssh-keygen -y -f /tmp/k3 2>&1 | head -c 300 | tr '\n' ' ')
+    echo "::error title=DIAG key3::${ERR3:-<kosong>}"
+  fi
+  echo "::warning title=PETUNJUK::Pastikan key di-generate dengan ssh-keygen -t ed25519 -N \"\" (tanpa passphrase), lalu: cat ~/.ssh/bumi_deploy | base64 -w0, paste UTUH sebagai SSH_KEY."
   exit 1
 fi
 
