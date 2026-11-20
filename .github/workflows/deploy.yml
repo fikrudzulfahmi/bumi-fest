@@ -27,6 +27,7 @@ jobs:
         run: |
           npm ci
           npm run build
+          echo "::notice title=MANIFEST::bytes=$(wc -c < public/build/manifest.json) entries=$(grep -c '\"file\"' public/build/manifest.json) assets=$(ls public/build/assets | wc -l)"
 
       # Normalisasi + validasi SSH key, lalu uji konektivitas. Gagal cepat
       # dengan annotation yang jelas (tanpa perlu akses log admin).
