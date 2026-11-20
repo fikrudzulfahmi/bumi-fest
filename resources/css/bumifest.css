@@ -397,7 +397,9 @@ img, svg { max-width: 100%; }
 
 .tick div {
     display: inline-flex;
-    padding: 14px 0;
+    /* padding bawah lebih besar: kartu statistik menimpa area kosong,
+       bukan baris teksnya */
+    padding: 14px 0 46px;
     animation: tick 30s linear infinite;
     font: 700 clamp(18px, 2.4vw, 26px) var(--D);
 }
