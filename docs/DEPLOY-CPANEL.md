@@ -90,30 +90,34 @@ ADMIN_PASSWORD=<password admin kuat>
 
 ## BAGIAN B — Deploy key untuk GitHub Actions
 
-GitHub Actions butuh key SSH **terpisah** (bukan key login cPanel Anda) supaya kalau bocor bisa dicabut sendiri.
+> **Status: SUDAH SELESAI di sisi laptop + GitHub.**
+> Key `~/.ssh/bumi_deploy` (ed25519, tanpa passphrase) sudah dibuat,
+> dan secret GitHub `SSH_KEY` sudah diperbarui. **Anda hanya perlu memasang
+> public key di cPanel (B2), lalu lanjut Bagian D.**
+>
+> Public key yang harus dipasang:
+> ```
+> ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIgGPhr5GDBPyQPwFiCSoAD/C9F3isR13vDN8scsrj3H bumi-deploy
+> ```
 
-### B1. Generate key di lokal (terminal)
+### B1. (sudah dilakukan) Generate key di laptop
 ```bash
 ssh-keygen -t ed25519 -f ~/.ssh/bumi_deploy -N "" -C "bumi-deploy"
 ```
 
-### B2. Pasang public key di cPanel
-1. `cat ~/.ssh/bumi_deploy.pub` → salin isinya.
-2. cPanel → **SSH Access** → **Manage SSH Keys** → **Import Key**.
-3. Nama `bumi_deploy` → paste isi public key → **Import**.
-4. Di daftar Public Keys → **Manage** key `bumi_deploy` → **Authorize**.
+### B2. Pasang public key di cPanel  ← SATU-SATUNYA LANGKAH MANUAL
+1. cPanel → **SSH Access** → **Manage SSH Keys** → **Import Key**.
+2. **Key Name**: `bumi_deploy`.
+3. **Public Key**: paste baris `ssh-ed25519 AAAA... bumi-deploy` di atas.
+4. **Import**.
+5. Di daftar **Public Keys**, cari `bumi_deploy` → **Manage** → **Authorize**.
 
-### B3. Uji key dari lokal (PENTING, sebelum menyentuh GitHub)
-```bash
-ssh -i ~/.ssh/bumi_deploy -p 22 -o StrictHostKeyChecking=no -o BatchMode=yes <user>@<host> whoami
-```
-Harus mencetak username cPanel. Kalau gagal → periksa A1/B2 (key belum di-authorize).
+### B3. (sudah diverifikasi) Key terbaca tanpa passphrase
+Sudah diuji: `ssh-keygen -y` membaca key tanpa meminta passphrase.
 
-### B4. Encode private key jadi base64 SATU BARIS
-```bash
-cat ~/.ssh/bumi_deploy | base64 -w0 ; echo
-```
-Salin seluruh output satu baris itu.
+### B4. (sudah dilakukan) Secret GitHub sudah diperbarui
+`SSH_KEY` sudah berisi base64 satu baris dari `~/.ssh/bumi_deploy`
+(timestamp pembaruan terlihat di Settings → Secrets → Actions).
 
 ---
 
