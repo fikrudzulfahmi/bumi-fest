@@ -16,7 +16,7 @@ Total ±30 menit. Butuh akses: cPanel, terminal (sekali, untuk deploy key), GitH
 
 ### A2. Buat subdomain (kalau belum ada)
 1. cPanel → **Domains** → **Domains** (atau **Subdomains**).
-2. **Create A New Domain** → isi Domain: `bumi.<domainanda>` → kosongkan Document Root (biarkan default `bumi.<domainanda>`).
+2. **Create A New Domain** → isi Domain: `fest.ma-bumi.sch.id` → kosongkan Document Root (biarkan default `fest.ma-bumi.sch.id`).
 3. **Submit**.
 
 ### A3. Buat database MySQL
@@ -42,9 +42,9 @@ Total ±30 menit. Butuh akses: cPanel, terminal (sekali, untuk deploy key), GitH
 5. Kembali ke cPanel, ulangi A4 (Clone).
 
 ### A6. Arahkan docroot ke folder `public` (WAJIB — jangan root repo!)
-1. cPanel → **Domains** → baris domain `bumi.<domainanda>` → **Manage**.
+1. cPanel → **Domains** → baris domain `fest.ma-bumi.sch.id` → **Manage**.
 2. Cari **Document Root** → ubah ke `/home/<user>/bumi-fest/public` → **Update**.
-3. Verifikasi: buat berkas uji di File Manager `bumi-fest/public/uji.txt` berisi `hi`, buka `https://bumi.<domainanda>/uji.txt` → harus tampil `hi`. Hapus berkas uji setelahnya.
+3. Verifikasi: buat berkas uji di File Manager `bumi-fest/public/uji.txt` berisi `hi`, buka `https://fest.ma-bumi.sch.id/uji.txt` → harus tampil `hi`. Hapus berkas uji setelahnya.
 
 ### A7. Isi `.env` produksi
 1. cPanel → **File Manager** → masuk folder `bumi-fest`.
@@ -55,7 +55,7 @@ Total ±30 menit. Butuh akses: cPanel, terminal (sekali, untuk deploy key), GitH
 APP_NAME="Bumi Fest"
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://bumi.<domainanda>
+APP_URL=https://fest.ma-bumi.sch.id
 APP_LOCALE=id
 APP_FALLBACK_LOCALE=id
 
@@ -145,11 +145,11 @@ Sudah diuji: `ssh-keygen -y` membaca key tanpa meminta passphrase.
 
 ## BAGIAN E — Verifikasi
 
-1. Buka `https://bumi.<domainanda>/` → halaman beranda tampil (bukan 500/404).
-2. Buka `https://bumi.<domainanda>/login` → form masuk tampil.
+1. Buka `https://fest.ma-bumi.sch.id/` → halaman beranda tampil (bukan 500/404).
+2. Buka `https://fest.ma-bumi.sch.id/login` → form masuk tampil.
 3. Login `ADMIN_EMAIL` / `ADMIN_PASSWORD` → masuk ke `/admin`.
-4. Buka `https://bumi.<domainanda>/up` → `{"status":"ok"}`.
-5. Cek `https://bumi.<domainanda>/.env` → harus **403** (bukan menampilkan isi .env). Kalau malah terunduh → docroot A6 belum benar.
+4. Buka `https://fest.ma-bumi.sch.id/up` → `{"status":"ok"}`.
+5. Cek `https://fest.ma-bumi.sch.id/.env` → harus **403** (bukan menampilkan isi .env). Kalau malah terunduh → docroot A6 belum benar.
 
 ## Jika run merah
 
@@ -171,7 +171,7 @@ Penyebab paling umum:
   ```
   * * * * * cd /home/<user>/bumi-fest && /usr/local/bin/php artisan queue:work --stop-when-empty --tries=3 --timeout=120 >> /dev/null 2>&1
   ```
-- **PHP versi**: cPanel → **MultiPHP Manager** → pastikan domain `bumi.<domainanda>` memakai **PHP 8.3** (Laravel 12 wajib 8.2+, dan beberapa dependensi butuh 8.3).
+- **PHP versi**: cPanel → **MultiPHP Manager** → pastikan domain `fest.ma-bumi.sch.id` memakai **PHP 8.3** (Laravel 12 wajib 8.2+, dan beberapa dependensi butuh 8.3).
 - **Batas unggah**: cPanel → **MultiPHP INI Editor** → domain → `upload_max_filesize` = `60M`, `post_max_size` = `60M` (untuk unggah karya/dokumen besar).
 
 ---
