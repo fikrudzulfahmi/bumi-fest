@@ -30,10 +30,19 @@ return new class extends Migration
 
             $table->index(['status', 'total']);
         });
+
+        // FK registrations.invoice_id ditambahkan di sini (tabel invoices baru ada).
+        Schema::table('registrations', function (Blueprint $table) {
+            $table->foreign('invoice_id')->references('id')->on('invoices')->nullOnDelete();
+        });
     }
 
     public function down(): void
     {
+        Schema::table('registrations', function (Blueprint $table) {
+            $table->dropForeign(['invoice_id']);
+        });
+
         Schema::dropIfExists('invoices');
     }
 };

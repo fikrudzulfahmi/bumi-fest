@@ -13,7 +13,9 @@ return new class extends Migration
             $table->string('code', 32)->unique();
             $table->foreignId('competition_id')->constrained()->cascadeOnDelete();
             $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('invoice_id')->nullable()->constrained()->nullOnDelete();
+            // FK ke invoices dipasang di migrasi create_invoices_table (MySQL menolak
+            // FK ke tabel yang belum ada; SQLite tidak menegakkannya sehingga lolos lokal).
+            $table->unsignedBigInteger('invoice_id')->nullable()->index();
             $table->string('status', 32)->default('draft');
             $table->string('team_name')->nullable();
             $table->unsignedInteger('fee')->default(0);
