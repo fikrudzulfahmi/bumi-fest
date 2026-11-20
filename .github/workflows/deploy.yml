@@ -17,93 +17,64 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: gd, intl, zip, mbstring, pdo_mysql, dom
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
 
-      # Build aset frontend di runner (server shared hosting sering tanpa Node),
-      # lalu unggah hasilnya terpisah — sisanya lewat git pull di server.
       - name: Build assets
         run: |
           npm ci
           npm run build
 
+      # Normalisasi + validasi SSH key, lalu uji konektivitas. Gagal cepat
+      # dengan annotation yang jelas (tanpa perlu akses log admin).
+      - name: Pre-flight SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: bash .github/scripts/prepare_ssh.sh
+
       - name: Upload built assets (public/build)
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          source: 'public/build'
-          target: ${{ secrets.DEPLOY_PATH }}
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          PORT="${SSH_PORT:-22}"
+          ssh -i ~/.ssh/deploy_key -p "$PORT" -o StrictHostKeyChecking=no -o BatchMode=yes \
+            "$SSH_USER@$SSH_HOST" "mkdir -p '$DEPLOY_PATH/public/build'"
+          scp -i ~/.ssh/deploy_key -P "$PORT" -o StrictHostKeyChecking=no -o BatchMode=yes \
+            -r public/build "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/public/"
 
-      - name: Deploy backend via SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          script_stop: false
-          script: |
-            set -e
-            cd "${{ secrets.DEPLOY_PATH }}"
-
-            export PATH="$HOME/bin:/usr/local/bin:/usr/bin:/bin:/opt/cpanel/composer/bin:$PATH"
-
-            git pull origin "${{ github.ref_name }}"
-
-            # APP_KEY wajib ada; tanpa ini route web (session/encryption) → 500.
-            grep -qE '^APP_KEY=base64:.+' .env 2>/dev/null || php artisan key:generate --force
-            php artisan config:clear
-
-            # Composer: cari biner (PATH SSH minim), fallback ke composer.phar.
-            COMPOSER="$(command -v composer || true)"
-            if [ -z "$COMPOSER" ] && [ -f "$HOME/composer.phar" ]; then COMPOSER="php $HOME/composer.phar"; fi
-            if [ -z "$COMPOSER" ]; then
-              echo "::error title=COMPOSER::composer tidak ditemukan — pasang manual di server"
-              exit 1
-            fi
-            $COMPOSER install --no-dev --optimize-autoloader --no-interaction
-
-            if [ "${{ github.event.inputs.fresh }}" = "true" ]; then
-              php artisan migrate:fresh --force --seed
-            else
-              php artisan migrate --force
-            fi
-
-            php artisan route:clear && php artisan route:cache
-            php artisan config:clear && php artisan config:cache
-            php artisan view:clear && php artisan view:cache
-            php artisan storage:link 2>/dev/null || true
-            php artisan optimize
+      - name: Deploy backend
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          FRESH: ${{ github.event.inputs.fresh }}
+          BRANCH: ${{ github.ref_name }}
+        run: bash .github/scripts/deploy_backend.sh
 
       - name: Diagnostics (if failed)
         if: failure()
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          script: |
-            set +e
-            cd "${{ secrets.DEPLOY_PATH }}" 2>/dev/null || { echo "::warning title=P1 PATH::folder deploy tidak ada"; exit 0; }
-            echo "::warning title=P1 PWD::$(pwd)"
-            echo "::warning title=P2 PHP::$(php -v 2>&1 | head -1)"
-            echo "::warning title=P3 LS::$(ls -a | tr '\n' ' ')"
-            echo "::warning title=P4 ARTISAN::$([ -f artisan ] && echo ada || echo TIDAK)"
-            echo "::warning title=P5 VENDOR::$([ -d vendor ] && echo ada || echo TIDAK)"
-            echo "::warning title=P6 ENV::$([ -f .env ] && echo ada || echo TIDAK)"
-            echo "::warning title=P7 APPKEY::$(grep -qE '^APP_KEY=base64:.+' .env 2>/dev/null && echo OK || echo KOSONG)"
-            echo "::warning title=P8 COMPOSER::$(command -v composer || echo TIDAK)"
-            exit 0
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set +e
+          PORT="${SSH_PORT:-22}"
+          echo "::warning title=P1 HOST::[${SSH_HOST:-KOSONG}] USER=[${SSH_USER:-KOSONG}] PATH=[${DEPLOY_PATH:-KOSONG}]"
+          if [ -f ~/.ssh/deploy_key ]; then
+            OUT=$(ssh -i ~/.ssh/deploy_key -p "$PORT" -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=20 "$SSH_USER@$SSH_HOST" "cd '$DEPLOY_PATH' 2>/dev/null && { pwd; ls -a | tr '\n' ' '; php -v 2>&1 | head -1; [ -f artisan ] && echo ARTISAN_ADA || echo ARTISAN_TIDAK; [ -f .env ] && echo ENV_ADA || echo ENV_TIDAK; grep -qE '^APP_KEY=base64:.+' .env 2>/dev/null && echo APPKEY_OK || echo APPKEY_KOSONG; command -v composer || echo COMPOSER_TIDAK; }" 2>&1)
+            echo "::warning title=P2 SERVER::$(printf '%s' "$OUT" | tr '\n' ' ' | head -c 600)"
+          fi
+          exit 0
