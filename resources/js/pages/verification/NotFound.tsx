@@ -1,20 +1,48 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import { ShieldX } from 'lucide-react';
 
 export default function NotFound() {
     return (
         <>
             <Head title="Verifikasi Sertifikat" />
-            <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
-                <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
-                    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
-                        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+
+            <div className="auth">
+                <div className="auth__panel" style={{ textAlign: 'center' }}>
+                    <Link href="/" className="auth__brand">
+                        <span className="logo" style={{ fontSize: 24 }}>
+                            <i aria-hidden="true" />
+                            bumifest
+                        </span>
+                    </Link>
+
+                    <span
+                        aria-hidden="true"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 48,
+                            height: 48,
+                            borderRadius: '50%',
+                            background: 'var(--clay-d)',
+                            color: '#fff',
+                            border: 'var(--line)',
+                        }}
+                    >
+                        <ShieldX size={24} />
                     </span>
-                    <h1 className="mt-4 text-lg font-bold text-gray-900">Sertifikat Tidak Ditemukan</h1>
-                    <p className="mt-2 text-sm text-gray-500">
-                        Kode verifikasi tidak cocok dengan sertifikat mana pun. Periksa kembali kode pada sertifikat.
+
+                    <h1 style={{ fontSize: '1.35rem', marginTop: 16 }}>Sertifikat tidak ditemukan</h1>
+                    <p className="muted" style={{ marginTop: 10, fontSize: 15 }}>
+                        Kode verifikasi tidak cocok dengan sertifikat mana pun. Periksa kembali kode yang
+                        tertera pada sertifikat.
                     </p>
+
+                    <div style={{ marginTop: 20 }}>
+                        <Link href="/" className="btn btn--ghost btn--sm">
+                            Kembali ke beranda
+                        </Link>
+                    </div>
                 </div>
             </div>
         </>

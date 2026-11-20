@@ -1,10 +1,11 @@
+import ConfirmDialog from '@/Components/app/ConfirmDialog';
+import Field from '@/Components/app/Field';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import Pagination from '@/Components/app/Pagination';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Modal from '@/Components/Modal';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
-import DangerButton from '@/Components/DangerButton';
-import { Link, router, usePage } from '@inertiajs/react';
-import { Head } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Download, Eye, SlidersHorizontal, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface Paginated<T> {
@@ -13,6 +14,7 @@ interface Paginated<T> {
     current_page: number;
     last_page: number;
     total: number;
+    per_page?: number;
 }
 
 interface Registration {
@@ -23,7 +25,7 @@ interface Registration {
     status_color: string;
     team_name: string | null;
     fee: number;
-    competition?: { id: number; name: string; level: string };
+    competition?: { id: number; name: string; level: string; level_label?: string | null };
     owner?: { id: number; name: string; email: string; whatsapp: string | null };
     invoice: { id: number; number: string; status: string; status_label: string; total: number } | null;
     members_count?: number;
@@ -46,24 +48,7 @@ interface Props {
     institutions: Array<{ id: number; name: string }>;
 }
 
-const badge: Record<string, string> = {
-    gray: 'bg-gray-100 text-gray-600 ring-gray-200',
-    yellow: 'bg-amber-50 text-amber-700 ring-amber-200',
-    blue: 'bg-blue-50 text-blue-700 ring-blue-200',
-    green: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-    red: 'bg-red-50 text-red-700 ring-red-200',
-    slate: 'bg-slate-100 text-slate-600 ring-slate-200',
-};
-
-export default function Index({
-    registrations,
-    filters,
-    levels,
-    statuses,
-    competitions,
-    institutions,
-}: Props) {
-    const flash = (usePage().props as { flash?: { success?: string; error?: string } }).flash;
+export default function Index({ registrations, filters, levels, statuses, competitions, institutions }: Props) {
     const [form, setForm] = useState<Filters>(filters);
     const [cancelling, setCancelling] = useState<Registration | null>(null);
     const [reason, setReason] = useState('');
@@ -109,36 +94,58 @@ export default function Index({
     };
 
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Data Pendaftaran</h1>}>
+        <AuthenticatedLayout
+            header={
+                <div>
+                    <span className="kicker">Panitia</span>
+                    <h1>Data Pendaftaran</h1>
+                </div>
+            }
+        >
             <Head title="Data Pendaftaran" />
 
-            <div className="mx-auto max-w-7xl space-y-4 p-4">
-                {flash?.success && (
-                    <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">
-                        {flash.error}
-                    </div>
-                )}
+            <FlashMessage />
 
-                <div className="grid gap-2 rounded border border-gray-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-6">
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Cari</span>
+            <section className="panel panel--flat">
+                <div className="panel__head" style={{ marginBottom: 14 }}>
+                    <div>
+                        <span className="kicker">Saringan data</span>
+                        <h3>Saring pendaftaran</h3>
+                    </div>
+                    <div className="row-gap">
+                        <button type="button" className="btn btn--clay btn--sm" onClick={applyFilters}>
+                            <SlidersHorizontal size={16} aria-hidden />
+                            Terapkan
+                        </button>
+                        <a href={exportUrl()} className="btn btn--ghost btn--sm">
+                            <Download size={16} aria-hidden />
+                            Ekspor
+                        </a>
+                    </div>
+                </div>
+
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                        gap: 12,
+                    }}
+                >
+                    <Field label="Cari" htmlFor="filter-q">
                         <input
-                            className="w-full rounded border-gray-300 text-sm"
+                            id="filter-q"
+                            className="input"
                             value={form.q}
                             onChange={(e) => setForm({ ...form, q: e.target.value })}
                             onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                             placeholder="kode / nama / sekolah"
                         />
-                    </label>
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Jenjang</span>
+                    </Field>
+
+                    <Field label="Jenjang" htmlFor="filter-level">
                         <select
-                            className="w-full rounded border-gray-300 text-sm"
+                            id="filter-level"
+                            className="select"
                             value={form.level}
                             onChange={(e) => setForm({ ...form, level: e.target.value })}
                         >
@@ -149,11 +156,12 @@ export default function Index({
                                 </option>
                             ))}
                         </select>
-                    </label>
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Lomba</span>
+                    </Field>
+
+                    <Field label="Lomba" htmlFor="filter-competition">
                         <select
-                            className="w-full rounded border-gray-300 text-sm"
+                            id="filter-competition"
+                            className="select"
                             value={form.competition_id}
                             onChange={(e) => setForm({ ...form, competition_id: Number(e.target.value) })}
                         >
@@ -164,11 +172,12 @@ export default function Index({
                                 </option>
                             ))}
                         </select>
-                    </label>
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Status</span>
+                    </Field>
+
+                    <Field label="Status" htmlFor="filter-status">
                         <select
-                            className="w-full rounded border-gray-300 text-sm"
+                            id="filter-status"
+                            className="select"
                             value={form.status}
                             onChange={(e) => setForm({ ...form, status: e.target.value })}
                         >
@@ -179,11 +188,12 @@ export default function Index({
                                 </option>
                             ))}
                         </select>
-                    </label>
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Lembaga</span>
+                    </Field>
+
+                    <Field label="Lembaga" htmlFor="filter-institution">
                         <select
-                            className="w-full rounded border-gray-300 text-sm"
+                            id="filter-institution"
+                            className="select"
                             value={form.institution_id}
                             onChange={(e) => setForm({ ...form, institution_id: Number(e.target.value) })}
                         >
@@ -194,79 +204,87 @@ export default function Index({
                                 </option>
                             ))}
                         </select>
-                    </label>
-                    <div className="flex items-end gap-2">
-                        <PrimaryButton onClick={applyFilters}>Terapkan</PrimaryButton>
-                        <a href={exportUrl()}>
-                            <SecondaryButton type="button">Ekspor</SecondaryButton>
-                        </a>
-                    </div>
+                    </Field>
                 </div>
+            </section>
 
-                <div className="overflow-x-auto rounded border border-gray-200 bg-white">
-                    <table className="min-w-full text-sm">
+            <div className="row-between">
+                <p className="muted" style={{ fontSize: 15 }}>
+                    {registrations.total} entri ditemukan.
+                </p>
+            </div>
+
+            {registrations.data.length === 0 ? (
+                <EmptyState
+                    title="Tidak ada entri yang cocok"
+                    description="Ubah kata kunci atau saringan di atas untuk melihat pendaftaran lain."
+                />
+            ) : (
+                <div className="table-wrap">
+                    <table className="data">
                         <thead>
-                            <tr className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                                <th className="px-3 py-2">Kode</th>
-                                <th className="px-3 py-2">Lomba</th>
-                                <th className="px-3 py-2">Pemilik</th>
-                                <th className="px-3 py-2">Status</th>
-                                <th className="px-3 py-2">Tagihan</th>
-                                <th className="px-3 py-2">Aksi</th>
+                            <tr>
+                                <th>Kode</th>
+                                <th>Lomba</th>
+                                <th>Pemilik</th>
+                                <th>Status</th>
+                                <th>Tagihan</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {registrations.data.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} className="px-3 py-8 text-center text-gray-500">
-                                        Tidak ada entri yang cocok.
-                                    </td>
-                                </tr>
-                            )}
                             {registrations.data.map((item) => (
-                                <tr key={item.id} className="border-t border-gray-100">
-                                    <td className="px-3 py-2 font-mono text-xs">{item.code}</td>
-                                    <td className="px-3 py-2">
-                                        <p>{item.competition?.name ?? '—'}</p>
-                                        <p className="text-xs uppercase text-gray-500">{item.competition?.level}</p>
+                                <tr key={item.id}>
+                                    <td data-label="Kode" className="nowrap">
+                                        <span className="tnum small strong">{item.code}</span>
                                     </td>
-                                    <td className="px-3 py-2">
-                                        <p>{item.owner?.name ?? '—'}</p>
-                                        <p className="text-xs text-gray-500">{item.owner?.email}</p>
-                                    </td>
-                                    <td className="px-3 py-2">
-                                        <span
-                                            className={`inline-flex rounded px-2 py-1 text-xs ring-1 ${
-                                                badge[item.status_color] ?? badge.gray
-                                            }`}
-                                        >
-                                            {item.status_label}
+                                    <td data-label="Lomba">
+                                        <span className="strong">{item.competition?.name ?? '—'}</span>
+                                        <span className="small muted" style={{ display: 'block' }}>
+                                            {item.competition?.level_label ?? item.competition?.level}
+                                            {typeof item.members_count === 'number' ? ` · ${item.members_count} siswa` : ''}
                                         </span>
                                     </td>
-                                    <td className="px-3 py-2">
+                                    <td data-label="Pemilik">
+                                        <span>{item.owner?.name ?? '—'}</span>
+                                        <span className="small muted" style={{ display: 'block' }}>
+                                            {item.owner?.email ?? '—'}
+                                        </span>
+                                    </td>
+                                    <td data-label="Status">
+                                        <StatusBadge value={item.status} label={item.status_label} />
+                                    </td>
+                                    <td data-label="Tagihan">
                                         {item.invoice ? (
                                             <>
-                                                <p className="font-mono text-xs">{item.invoice.number}</p>
-                                                <p className="text-xs text-gray-500">{item.invoice.status_label}</p>
+                                                <span className="tnum small">{item.invoice.number}</span>
+                                                <span className="small muted" style={{ display: 'block' }}>
+                                                    {item.invoice.status_label}
+                                                </span>
                                             </>
                                         ) : (
-                                            <span className="text-xs text-gray-400">—</span>
+                                            <span className="small muted">—</span>
                                         )}
                                     </td>
-                                    <td className="px-3 py-2">
-                                        <div className="flex gap-2 text-xs">
+                                    <td data-label="Aksi">
+                                        <div className="row-gap" style={{ gap: 8 }}>
                                             <Link
                                                 href={route('admin.registrations.show', item.id)}
-                                                className="text-blue-600 hover:underline"
+                                                className="btn btn--ghost btn--sm"
                                             >
+                                                <Eye size={15} aria-hidden />
                                                 Detail
                                             </Link>
                                             {item.status !== 'cancelled' && (
                                                 <button
                                                     type="button"
-                                                    className="text-red-600 hover:underline"
-                                                    onClick={() => setCancelling(item)}
+                                                    className="btn btn--danger btn--sm"
+                                                    onClick={() => {
+                                                        setLocalError(null);
+                                                        setCancelling(item);
+                                                    }}
                                                 >
+                                                    <XCircle size={15} aria-hidden />
                                                     Batalkan
                                                 </button>
                                             )}
@@ -277,62 +295,50 @@ export default function Index({
                         </tbody>
                     </table>
                 </div>
+            )}
 
-                <div className="flex flex-wrap items-center gap-1 text-xs">
-                    {registrations.links.map((link, index) =>
-                        link.url ? (
-                            <Link
-                                key={index}
-                                href={link.url}
-                                className={`rounded border px-2 py-1 ${
-                                    link.active
-                                        ? 'border-gray-800 bg-gray-800 text-white'
-                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
+            <Pagination
+                links={registrations.links}
+                total={registrations.total}
+                perPage={registrations.per_page}
+            />
+
+            <ConfirmDialog
+                show={cancelling !== null}
+                title="Batalkan entri pendaftaran?"
+                message={
+                    <div className="stack-sm">
+                        <p>
+                            Entri <span className="strong tnum">{cancelling?.code}</span> akan dibatalkan dan slotnya
+                            dilepas. Tindakan ini tidak dapat diurungkan.
+                        </p>
+                        <Field
+                            label="Alasan pembatalan"
+                            htmlFor="cancel-reason"
+                            error={localError ?? undefined}
+                            hint="Minimal 5 karakter, tercatat pada riwayat."
+                            required
+                        >
+                            <textarea
+                                id="cancel-reason"
+                                className="textarea"
+                                rows={3}
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
                             />
-                        ) : (
-                            <span
-                                key={index}
-                                className="rounded border border-gray-100 px-2 py-1 text-gray-300"
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ),
-                    )}
-                    <span className="ml-2 text-gray-500">{registrations.total} entri</span>
-                </div>
-            </div>
-
-            <Modal show={cancelling !== null} onClose={() => setCancelling(null)} maxWidth="md">
-                <div className="p-5">
-                    <h2 className="text-lg font-semibold">Batalkan entri</h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                        Entri <span className="font-mono">{cancelling?.code}</span> akan dibatalkan dan slotnya dilepas.
-                        Tindakan ini tidak dapat dibatalkan.
-                    </p>
-
-                    <label className="mt-4 block text-sm">
-                        <span className="block text-xs text-gray-500">Alasan (wajib)</span>
-                        <textarea
-                            className="mt-1 w-full rounded border-gray-300 text-sm"
-                            rows={3}
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                        />
-                    </label>
-
-                    {localError && <p className="mt-2 text-xs text-red-600">{localError}</p>}
-
-                    <div className="mt-4 flex justify-end gap-2">
-                        <SecondaryButton type="button" onClick={() => setCancelling(null)} disabled={busy}>
-                            Batal
-                        </SecondaryButton>
-                        <DangerButton type="button" onClick={submitCancel} disabled={busy}>
-                            {busy ? 'Memproses…' : 'Batalkan entri'}
-                        </DangerButton>
+                        </Field>
                     </div>
-                </div>
-            </Modal>
+                }
+                confirmLabel="Ya, batalkan entri"
+                cancelLabel="Tidak jadi"
+                danger
+                processing={busy}
+                onConfirm={submitCancel}
+                onCancel={() => {
+                    setCancelling(null);
+                    setLocalError(null);
+                }}
+            />
         </AuthenticatedLayout>
     );
 }

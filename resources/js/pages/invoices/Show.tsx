@@ -1,10 +1,11 @@
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { useRef, useState } from 'react';
+import FlashMessage from '@/Components/app/FlashMessage';
+import Modal from '@/Components/app/Modal';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Modal from '@/Components/Modal';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
 import { formatRupiah, formatTanggalWaktu } from '@/lib/format';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, CheckCircle2, ClipboardCopy, Eye, Landmark, ShieldCheck, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 interface Invoice {
     id: number;
@@ -45,17 +46,7 @@ interface Props {
     canManage: boolean;
 }
 
-const badge: Record<string, string> = {
-    red: 'bg-red-50 text-red-700 ring-red-200',
-    blue: 'bg-blue-50 text-blue-700 ring-blue-200',
-    orange: 'bg-orange-50 text-orange-700 ring-orange-200',
-    green: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-    gray: 'bg-gray-100 text-gray-600 ring-gray-200',
-    slate: 'bg-slate-100 text-slate-600 ring-slate-200',
-};
-
 export default function Show({ invoice, entries, canManage }: Props) {
-    const flash = (usePage().props as { flash?: { success?: string; error?: string } }).flash;
     const fileInput = useRef<HTMLInputElement>(null);
     const [copied, setCopied] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -87,182 +78,233 @@ export default function Show({ invoice, entries, canManage }: Props) {
     };
 
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Tagihan {invoice.number}</h1>}>
+        <AuthenticatedLayout header={<h1>Tagihan {invoice.number}</h1>}>
             <Head title={`Tagihan ${invoice.number}`} />
 
-            <div className="mx-auto max-w-4xl space-y-4 p-4">
-                {flash?.success && (
-                    <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">
-                        {flash.error}
-                    </div>
-                )}
+            <FlashMessage />
 
-                <div className="rounded border border-gray-200 p-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <span
-                            className={`rounded px-2 py-0.5 text-xs ring-1 ${
-                                badge[invoice.status_color] ?? badge.gray
-                            }`}
-                        >
-                            {invoice.status_label}
+            <div className="stack">
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Total transfer</span>
+                            <h2 style={{ marginTop: 4 }}>{formatRupiah(invoice.total)}</h2>
+                            <p className="muted">
+                                <StatusBadge value={invoice.status} label={invoice.status_label} />
+                                {invoice.due_at && (
+                                    <span style={{ marginLeft: 10 }}>
+                                        Jatuh tempo {formatTanggalWaktu(invoice.due_at)}
+                                        {invoice.is_overdue && (
+                                            <span className="badge badge--bad" style={{ marginLeft: 8 }}>
+                                                Lewat jatuh tempo
+                                            </span>
+                                        )}
+                                    </span>
+                                )}
+                            </p>
+                        </div>
+                        <div className="row-gap" style={{ gap: 8 }}>
+                            <button type="button" className="btn btn--ghost btn--sm" onClick={copyTotal}>
+                                <ClipboardCopy size={16} aria-hidden />
+                                {copied ? 'Tersalin' : 'Salin total'}
+                            </button>
+                            <Link className="btn btn--ghost btn--sm" href={route('invoices.index')}>
+                                <ArrowLeft size={16} aria-hidden />
+                                Daftar tagihan
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div className="divider" />
+
+                    <div className="row-between">
+                        <span className="muted">Subtotal</span>
+                        <span className="tnum">{formatRupiah(invoice.subtotal)}</span>
+                    </div>
+                    {invoice.discount > 0 && (
+                        <div className="row-between" style={{ marginTop: 6 }}>
+                            <span className="muted">Potongan</span>
+                            <span className="tnum">-{formatRupiah(invoice.discount)}</span>
+                        </div>
+                    )}
+                    <div className="row-between" style={{ marginTop: 6 }}>
+                        <span className="muted">Kode unik</span>
+                        <span className="tnum strong">{invoice.unique_code}</span>
+                    </div>
+                    <div className="row-between" style={{ marginTop: 10 }}>
+                        <span className="strong">Total transfer</span>
+                        <span className="tnum strong" style={{ fontFamily: 'var(--D)', fontSize: '1.25rem' }}>
+                            {formatRupiah(invoice.total)}
                         </span>
-                        {invoice.due_at && (
-                            <span
-                                className={`text-sm ${
-                                    invoice.is_overdue ? 'font-medium text-red-600' : 'text-gray-600'
-                                }`}
-                            >
-                                Jatuh tempo {formatTanggalWaktu(invoice.due_at)}
-                            </span>
-                        )}
+                    </div>
+                    <p className="hint" style={{ marginTop: 10 }}>
+                        <CheckCircle2 size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> Transfer tepat sampai 3
+                        digit terakhir kode unik agar tagihan terverifikasi otomatis.
+                    </p>
+                </section>
+
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Tujuan transfer</span>
+                            <h3>
+                                <Landmark size={18} aria-hidden style={{ verticalAlign: '-3px' }} /> Rekening panitia
+                            </h3>
+                            <p className="muted">
+                                {invoice.bank_name ?? 'Rekening belum tersedia'} · a.n.{' '}
+                                {invoice.bank_account_holder ?? '-'}
+                            </p>
+                        </div>
                     </div>
 
-                    <dl className="mt-4 space-y-1 text-sm">
-                        <div className="flex justify-between">
-                            <dt className="text-gray-600">Subtotal</dt>
-                            <dd>{formatRupiah(invoice.subtotal)}</dd>
-                        </div>
-                        {invoice.discount > 0 && (
-                            <div className="flex justify-between">
-                                <dt className="text-gray-600">Potongan</dt>
-                                <dd>-{formatRupiah(invoice.discount)}</dd>
-                            </div>
-                        )}
-                        <div className="flex justify-between">
-                            <dt className="text-gray-600">Kode unik</dt>
-                            <dd className="font-mono">{invoice.unique_code}</dd>
-                        </div>
-                        <div className="flex items-center justify-between border-t border-gray-200 pt-2 text-base font-semibold">
-                            <dt>Total transfer</dt>
-                            <dd className="flex items-center gap-2">
-                                <span>{formatRupiah(invoice.total)}</span>
-                                <button
-                                    type="button"
-                                    onClick={copyTotal}
-                                    className="rounded border border-gray-300 px-2 py-0.5 text-xs font-normal text-gray-700 hover:bg-gray-50"
-                                >
-                                    {copied ? 'Tersalin' : 'Salin'}
-                                </button>
-                            </dd>
-                        </div>
-                    </dl>
-                </div>
+                    <div className="stat">
+                        <span>Nomor rekening</span>
+                        <b style={{ fontSize: '1.6rem', letterSpacing: '.04em' }}>
+                            {invoice.bank_account_number ?? '—'}
+                        </b>
+                        <small>{invoice.bank_name ?? 'Bank belum ditentukan panitia'}</small>
+                    </div>
+                </section>
 
-                <div className="rounded border border-gray-200 p-4">
-                    <h2 className="font-semibold">Rekening Tujuan</h2>
-                    <p className="mt-2 text-sm">
-                        {invoice.bank_name ?? 'Rekening belum tersedia'} &middot;{' '}
-                        <span className="font-mono">{invoice.bank_account_number ?? '-'}</span>
-                    </p>
-                    <p className="text-sm text-gray-600">a.n. {invoice.bank_account_holder ?? '-'}</p>
-                    <p className="mt-2 text-xs text-gray-500">
-                        Transfer tepat sampai 3 digit terakhir kode unik agar terverifikasi otomatis.
-                    </p>
-                </div>
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Rincian</span>
+                            <h3>Entri pada tagihan ini ({entries.length})</h3>
+                        </div>
+                    </div>
 
-                <div className="rounded border border-gray-200 p-4">
-                    <h2 className="font-semibold">Entri Pendaftaran ({entries.length})</h2>
-                    <ul className="mt-2 divide-y divide-gray-100 text-sm">
-                        {entries.map((entry) => (
-                            <li key={entry.id} className="flex flex-wrap items-center gap-2 py-2">
-                                <span className="font-mono text-xs text-gray-500">{entry.code}</span>
-                                <span>{entry.competition_name ?? '-'}</span>
-                                {entry.team_name && <span className="text-gray-600">({entry.team_name})</span>}
-                                <span className="rounded bg-gray-100 px-2 py-0.5 text-xs">{entry.status_label}</span>
-                                <span className="ml-auto">{formatRupiah(entry.fee)}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
+                    {entries.length === 0 ? (
+                        <p className="small muted">Belum ada entri yang terhubung ke tagihan ini.</p>
+                    ) : (
+                        <div className="table-wrap">
+                            <table className="data">
+                                <thead>
+                                    <tr>
+                                        <th>Kode</th>
+                                        <th>Lomba</th>
+                                        <th>Status</th>
+                                        <th>Biaya</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {entries.map((entry) => (
+                                        <tr key={entry.id}>
+                                            <td data-label="Kode" className="nowrap">
+                                                <span className="tnum small">{entry.code}</span>
+                                            </td>
+                                            <td data-label="Lomba">
+                                                <span>{entry.competition_name ?? '—'}</span>
+                                                {entry.team_name && (
+                                                    <span className="small muted" style={{ display: 'block' }}>
+                                                        Tim {entry.team_name}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td data-label="Status">
+                                                <StatusBadge value={entry.status} label={entry.status_label} />
+                                            </td>
+                                            <td data-label="Biaya" className="num nowrap">
+                                                {formatRupiah(entry.fee)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </section>
 
                 {invoice.rejection_reason && (
-                    <div className="rounded border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
-                        <p className="font-semibold">Bukti sebelumnya ditolak</p>
-                        <p className="mt-1">{invoice.rejection_reason}</p>
+                    <div className="toast toast--warn" role="alert">
+                        <div>
+                            <p className="strong" style={{ margin: 0 }}>
+                                Bukti sebelumnya ditolak
+                            </p>
+                            <p className="small" style={{ marginTop: 4 }}>
+                                {invoice.rejection_reason}
+                            </p>
+                        </div>
                     </div>
                 )}
 
-                <div className="rounded border border-gray-200 p-4">
-                    <h2 className="font-semibold">Bukti Pembayaran</h2>
-
-                    {invoice.has_proof ? (
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-                            <span className="text-gray-700">
-                                Terunggah {invoice.proof_uploaded_at ? formatTanggalWaktu(invoice.proof_uploaded_at) : ''}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => setPreviewOpen(true)}
-                                className="text-blue-600 hover:underline"
-                            >
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Bukti pembayaran</span>
+                            <h3>Unggah bukti transfer</h3>
+                            <p className="muted">
+                                {invoice.has_proof
+                                    ? `Terunggah ${
+                                          invoice.proof_uploaded_at ? formatTanggalWaktu(invoice.proof_uploaded_at) : ''
+                                      }`
+                                    : 'Belum ada bukti terunggah.'}
+                            </p>
+                        </div>
+                        {invoice.has_proof && (
+                            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setPreviewOpen(true)}>
+                                <Eye size={16} aria-hidden />
                                 Lihat bukti
                             </button>
-                        </div>
-                    ) : (
-                        <p className="mt-2 text-sm text-gray-600">Belum ada bukti terunggah.</p>
-                    )}
+                        )}
+                    </div>
 
                     {uploadable && (
-                        <div className="mt-3 space-y-2">
+                        <>
+                            <label className="label" htmlFor="proof-file">
+                                Berkas bukti (JPG, PNG, atau PDF · maksimal 5 MB)
+                            </label>
                             <input
+                                id="proof-file"
                                 ref={fileInput}
                                 type="file"
+                                className="input"
                                 accept="image/jpeg,image/png,application/pdf"
-                                onChange={(event) =>
-                                    form.setData('proof', event.target.files?.[0] ?? null)
-                                }
-                                className="block w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm"
+                                onChange={(event) => form.setData('proof', event.target.files?.[0] ?? null)}
                             />
-                            <p className="text-xs text-gray-500">JPG, PNG, atau PDF. Maksimal 5 MB.</p>
                             {form.errors.proof && (
-                                <p className="text-sm text-red-600">{form.errors.proof}</p>
+                                <p className="error" role="alert">
+                                    {form.errors.proof}
+                                </p>
                             )}
-                            <PrimaryButton
-                                type="button"
-                                onClick={submitProof}
-                                disabled={!form.data.proof || form.processing}
-                            >
-                                {form.processing ? 'Mengunggah...' : 'Unggah Bukti'}
-                            </PrimaryButton>
-                        </div>
+                            <div className="row-gap" style={{ marginTop: 14 }}>
+                                <button
+                                    type="button"
+                                    className="btn btn--clay"
+                                    onClick={submitProof}
+                                    disabled={!form.data.proof || form.processing}
+                                >
+                                    <Upload size={18} aria-hidden />
+                                    {form.processing ? 'Mengunggah…' : 'Unggah Bukti'}
+                                </button>
+                                {form.data.proof && !form.processing && (
+                                    <span className="small muted">Siap diunggah: {form.data.proof.name}</span>
+                                )}
+                            </div>
+                        </>
                     )}
 
                     {invoice.status === 'awaiting_verification' && (
-                        <p className="mt-3 text-sm text-blue-700">Menunggu verifikasi admin.</p>
+                        <p className="hint" style={{ marginTop: 12 }}>
+                            <ShieldCheck size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> Bukti sedang diperiksa
+                            panitia. Anda akan menerima pembaruan status setelah verifikasi.
+                        </p>
                     )}
-                </div>
 
-                <div className="flex gap-3">
-                    <Link href={route('invoices.index')} className="text-sm text-blue-600 hover:underline">
-                        Kembali ke daftar tagihan
-                    </Link>
                     {canManage && (
-                        <Link href={route('admin.payments.index')} className="text-sm text-blue-600 hover:underline">
-                            Antrean verifikasi
-                        </Link>
+                        <p className="small" style={{ marginTop: 12 }}>
+                            <Link href={route('admin.payments.index')}>Buka antrean verifikasi panitia</Link>
+                        </p>
                     )}
-                </div>
+                </section>
             </div>
 
-            <Modal show={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="2xl">
-                <div className="p-4">
-                    <h2 className="font-semibold">Bukti Pembayaran</h2>
-                    <img
-                        src={route('invoices.proof', invoice.id)}
-                        alt={`Bukti pembayaran ${invoice.number}`}
-                        className="mt-3 max-h-[70vh] w-full object-contain"
-                    />
-                    <div className="mt-3 flex justify-end">
-                        <SecondaryButton type="button" onClick={() => setPreviewOpen(false)}>
-                            Tutup
-                        </SecondaryButton>
-                    </div>
-                </div>
+            <Modal show={previewOpen} onClose={() => setPreviewOpen(false)} title={`Bukti ${invoice.number}`} wide>
+                <img
+                    src={route('invoices.proof', invoice.id)}
+                    alt={`Bukti pembayaran ${invoice.number}`}
+                    style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain', marginTop: 4 }}
+                />
             </Modal>
         </AuthenticatedLayout>
     );

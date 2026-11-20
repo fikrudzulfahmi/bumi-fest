@@ -1,9 +1,6 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Field from '@/Components/app/Field';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
 export default function ResetPassword({
@@ -32,68 +29,75 @@ export default function ResetPassword({
         <GuestLayout>
             <Head title="Reset Kata Sandi" />
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
+            <h1 className="auth__title">Atur Kata Sandi Baru</h1>
+            <p className="auth__sub muted">
+                Tentukan kata sandi baru untuk akun <span className="strong">{email}</span>.
+            </p>
 
-                    <TextInput
+            <form onSubmit={submit} style={{ marginTop: 20 }}>
+                <input type="hidden" name="token" value={token} />
+
+                <Field label="Email" htmlFor="email" error={errors.email} required>
+                    <input
                         id="email"
                         type="email"
                         name="email"
+                        className="input"
                         value={data.email}
-                        className="mt-1 block w-full"
                         autoComplete="username"
+                        aria-invalid={Boolean(errors.email)}
                         onChange={(e) => setData('email', e.target.value)}
                     />
+                </Field>
 
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Kata Sandi" />
-
-                    <TextInput
+                <Field
+                    label="Kata sandi baru"
+                    htmlFor="password"
+                    error={errors.password}
+                    hint="Minimal 8 karakter."
+                    required
+                >
+                    <input
                         id="password"
                         type="password"
                         name="password"
+                        className="input"
                         value={data.password}
-                        className="mt-1 block w-full"
                         autoComplete="new-password"
-                        isFocused={true}
+                        autoFocus
+                        aria-invalid={Boolean(errors.password)}
                         onChange={(e) => setData('password', e.target.value)}
                     />
+                </Field>
 
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Konfirmasi Kata Sandi"
-                    />
-
-                    <TextInput
+                <Field
+                    label="Ulangi kata sandi baru"
+                    htmlFor="password_confirmation"
+                    error={errors.password_confirmation}
+                    required
+                >
+                    <input
+                        id="password_confirmation"
                         type="password"
                         name="password_confirmation"
+                        className="input"
                         value={data.password_confirmation}
-                        className="mt-1 block w-full"
                         autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
+                        aria-invalid={Boolean(errors.password_confirmation)}
+                        onChange={(e) => setData('password_confirmation', e.target.value)}
                     />
+                </Field>
 
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
-                </div>
+                <button type="submit" className="btn btn--clay btn--block" disabled={processing}>
+                    {processing ? 'Menyimpan…' : 'Simpan Kata Sandi'}
+                </button>
 
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Simpan Kata Sandi
-                    </PrimaryButton>
-                </div>
+                <p className="auth__foot">
+                    Sudah selesai?{' '}
+                    <Link href={route('login')} style={{ fontWeight: 700 }}>
+                        Masuk dengan kata sandi baru
+                    </Link>
+                </p>
             </form>
         </GuestLayout>
     );

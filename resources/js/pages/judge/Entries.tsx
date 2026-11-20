@@ -1,5 +1,8 @@
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, ClipboardList, School } from 'lucide-react';
 
 interface Entry {
     id: number;
@@ -19,88 +22,129 @@ interface Props {
 }
 
 export default function Entries({ competition, entries, counts }: Props) {
+    const sisa = Math.max(0, counts.total - counts.done);
+
     return (
-        <AuthenticatedLayout
-            header={
-                <div>
-                    <h1 className="text-2xl font-bold">Penilaian</h1>
-                    <p className="text-sm text-gray-500">
-                        {competition.name} — jenjang {competition.level_label}
-                    </p>
-                </div>
-            }
-        >
+        <AuthenticatedLayout header={<h1>Penilaian {competition.name}</h1>}>
             <Head title={`Penilaian ${competition.name}`} />
 
-            <div className="mx-auto max-w-4xl space-y-4 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm text-gray-600">
-                        {counts.done} dari {counts.total} entri terkunci
-                    </p>
-                    <Link
-                        href={route('judge.dashboard')}
-                        className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
-                    >
-                        Kembali ke dasbor
-                    </Link>
-                </div>
+            <FlashMessage />
 
-                {entries.length === 0 && (
-                    <div className="rounded border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
-                        Belum ada entri terverifikasi pada lomba ini.
+            <div className="stack">
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Jenjang {competition.level_label ?? '—'}</span>
+                            <h2>Daftar entri</h2>
+                            <p className="muted">
+                                {counts.done} dari {counts.total} entri sudah dikunci · {sisa} entri menunggu penilaian.
+                            </p>
+                        </div>
+                        <Link className="btn btn--ghost btn--sm" href={route('judge.dashboard')}>
+                            <ArrowLeft size={16} aria-hidden />
+                            Kembali ke dasbor
+                        </Link>
                     </div>
-                )}
 
-                <ul className="space-y-3">
-                    {entries.map((entry) => (
-                        <li key={entry.id} className="rounded border border-gray-200 bg-white p-4">
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                    <p className="font-mono text-xs text-gray-500">{entry.code}</p>
-                                    <h2 className="text-base font-semibold">
-                                        {entry.team_name ?? (entry.names.join(', ') || 'Tanpa nama')}
-                                    </h2>
-                                    {entry.team_name && entry.names.length > 0 && (
-                                        <p className="text-sm text-gray-600">{entry.names.join(', ')}</p>
-                                    )}
-                                    {entry.school_name && (
-                                        <p className="text-xs text-gray-500">{entry.school_name}</p>
-                                    )}
-                                </div>
+                    <div className="stat-grid">
+                        <div className="stat">
+                            <b>{counts.total}</b>
+                            <span>Entri terverifikasi</span>
+                        </div>
+                        <div className="stat">
+                            <b>{counts.done}</b>
+                            <span>Terkunci</span>
+                            <small>{sisa} belum dikunci</small>
+                        </div>
+                    </div>
+                </section>
 
-                                <div className="flex shrink-0 items-center gap-2">
-                                    <span
-                                        className={`rounded px-2 py-1 text-xs ${
-                                            entry.status === 'locked'
-                                                ? 'bg-emerald-100 text-emerald-800'
-                                                : entry.status === 'draft'
-                                                  ? 'bg-amber-100 text-amber-800'
-                                                  : 'bg-gray-100 text-gray-600'
-                                        }`}
-                                    >
-                                        {entry.status_label ?? 'Belum dinilai'}
-                                    </span>
-                                    {entry.total !== null && (
-                                        <span className="text-sm font-semibold">{entry.total.toFixed(2)}</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="mt-3">
-                                <Link
-                                    href={route('judge.scores.edit', entry.id)}
-                                    className="inline-block min-h-11 rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
-                                >
-                                    {entry.status === null
-                                        ? 'Isi nilai'
-                                        : entry.status === 'locked'
-                                          ? 'Lihat nilai'
-                                          : 'Lanjutkan nilai'}
+                {entries.length === 0 ? (
+                    <div className="panel">
+                        <EmptyState
+                            title="Belum ada entri terverifikasi"
+                            description="Entri akan muncul di sini setelah panitia memverifikasi pendaftaran peserta."
+                            action={
+                                <Link className="btn btn--sm" href={route('judge.dashboard')}>
+                                    Kembali ke dasbor
                                 </Link>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
+                            }
+                        />
+                    </div>
+                ) : (
+                    <section className="panel">
+                        <div className="table-wrap">
+                            <table className="data">
+                                <thead>
+                                    <tr>
+                                        <th>Kode</th>
+                                        <th>Peserta</th>
+                                        <th>Sekolah</th>
+                                        <th>Status</th>
+                                        <th>Nilai</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {entries.map((entry) => (
+                                        <tr key={entry.id}>
+                                            <td data-label="Kode" className="nowrap">
+                                                <span className="tnum small">{entry.code}</span>
+                                            </td>
+                                            <td data-label="Peserta">
+                                                <span className="strong">
+                                                    {entry.team_name ?? (entry.names.join(', ') || 'Tanpa nama')}
+                                                </span>
+                                                {entry.team_name && entry.names.length > 0 && (
+                                                    <span className="small muted" style={{ display: 'block' }}>
+                                                        {entry.names.join(', ')}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td data-label="Sekolah">
+                                                {entry.school_name ? (
+                                                    <span className="small">
+                                                        <School size={13} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
+                                                        {entry.school_name}
+                                                    </span>
+                                                ) : (
+                                                    <span className="small muted">—</span>
+                                                )}
+                                            </td>
+                                            <td data-label="Status">
+                                                {entry.status ? (
+                                                    <StatusBadge value={entry.status} label={entry.status_label ?? undefined} />
+                                                ) : (
+                                                    <span className="badge badge--neutral">Belum dinilai</span>
+                                                )}
+                                            </td>
+                                            <td data-label="Nilai" className="num nowrap">
+                                                {entry.total !== null ? (
+                                                    <span className="strong">{entry.total.toFixed(2)}</span>
+                                                ) : (
+                                                    <span className="muted">—</span>
+                                                )}
+                                            </td>
+                                            <td data-label="Aksi">
+                                                <Link
+                                                    className="btn btn--clay btn--sm"
+                                                    href={route('judge.scores.edit', entry.id)}
+                                                >
+                                                    <ClipboardList size={16} aria-hidden />
+                                                    {entry.status === null
+                                                        ? 'Isi nilai'
+                                                        : entry.status === 'locked'
+                                                          ? 'Lihat nilai'
+                                                          : 'Lanjutkan nilai'}
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                )}
             </div>
         </AuthenticatedLayout>
     );

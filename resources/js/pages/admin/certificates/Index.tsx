@@ -1,8 +1,11 @@
+import Field from '@/Components/app/Field';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, ExternalLink, FileDown, ImageUp, Info, LayoutTemplate, QrCode, Save, ScanLine } from 'lucide-react';
 
-interface Field {
+interface LayoutField {
     x: number;
     y: number;
     size: number;
@@ -15,17 +18,17 @@ interface TemplateItem {
     type: string;
     type_label: string;
     image_url: string;
-    layout: Record<string, Field>;
+    layout: Record<string, LayoutField>;
 }
 
 interface Props {
     competition: { id: number; name: string; level_label: string | null; results_published_at: string | null };
     templates: TemplateItem[];
-    types: { name: string; value: string }[];
+    types: Array<string | { name?: string; value: string }>;
     certificates_count: number;
 }
 
-const fieldDefaults = (align = 'center'): Field => ({ x: 50, y: 50, size: 24, color: '#000000', align });
+const fieldDefaults = (align = 'center'): LayoutField => ({ x: 50, y: 50, size: 24, color: '#000000', align });
 
 function layoutDefaults() {
     return {
@@ -38,19 +41,25 @@ function layoutDefaults() {
 }
 
 export default function Index({ competition, templates, types, certificates_count }: Props) {
-    const flash = (usePage().props as { flash?: { success?: string; error?: string } }).flash;
+    // Server mengirim daftar enum sebagai string ("winner"/"participation");
+    // objek {name,value} tetap didukung bila bentuknya berubah.
+    const typeOptions = types.map((t) =>
+        typeof t === 'string'
+            ? { value: t, label: t === 'winner' ? 'Juara' : 'Partisipasi' }
+            : { value: t.value, label: t.name ?? (t.value === 'winner' ? 'Juara' : 'Partisipasi') },
+    );
 
     const form = useForm<{
         type: string;
         image: File | null;
-        layout: Record<string, Field>;
+        layout: Record<string, LayoutField>;
     }>({
         type: 'participation',
         image: null,
         layout: layoutDefaults(),
     });
 
-    const setField = (key: string, patch: Partial<Field>) => {
+    const setField = (key: string, patch: Partial<LayoutField>) => {
         form.setData('layout', { ...form.data.layout, [key]: { ...form.data.layout[key], ...patch } });
     };
 
@@ -68,11 +77,7 @@ export default function Index({ competition, templates, types, certificates_coun
     };
 
     const preview = (type: string) => {
-        router.get(
-            route('admin.certificates.preview', competition.id),
-            { type },
-            { replace: false },
-        );
+        router.get(route('admin.certificates.preview', competition.id), { type }, { replace: false });
     };
 
     const fieldRows: { key: string; label: string; hideAlign?: boolean }[] = [
@@ -83,12 +88,33 @@ export default function Index({ competition, templates, types, certificates_coun
         { key: 'qr', label: 'Kode QR', hideAlign: true },
     ];
 
+    const guide: { icon: React.ReactNode; text: string }[] = [
+        { icon: <ImageUp size={16} aria-hidden />, text: 'Unggah gambar latar sertifikat berformat PNG atau JPG, maksimal 5 MB.' },
+        {
+            icon: <LayoutTemplate size={16} aria-hidden />,
+            text: 'Atur posisi nama, lomba/juara, nomor, dan kode QR dalam persen terhadap ukuran halaman.',
+        },
+        {
+            icon: <ScanLine size={16} aria-hidden />,
+            text: 'Gunakan pratinjau PDF untuk memeriksa tata letak sebelum hasil diterbitkan.',
+        },
+        {
+            icon: <Info size={16} aria-hidden />,
+            text: 'Nama panjang otomatis diperkecil agar tetap muat dalam satu baris.',
+        },
+        {
+            icon: <QrCode size={16} aria-hidden />,
+            text: 'Kode QR memuat tautan verifikasi keaslian sertifikat.',
+        },
+    ];
+
     return (
         <AuthenticatedLayout
             header={
                 <div>
-                    <h1 className="text-2xl font-bold">Sertifikat</h1>
-                    <p className="text-sm text-gray-500">
+                    <span className="kicker">Panitia</span>
+                    <h1>Sertifikat</h1>
+                    <p className="small muted" style={{ marginTop: 4 }}>
                         {competition.name} — jenjang {competition.level_label}
                     </p>
                 </div>
@@ -96,171 +122,261 @@ export default function Index({ competition, templates, types, certificates_coun
         >
             <Head title={`Sertifikat ${competition.name}`} />
 
-            <div className="mx-auto max-w-5xl space-y-4 p-4">
-                {flash?.success && (
-                    <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                        {flash.error}
-                    </div>
-                )}
+            <FlashMessage />
 
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
-                    <span>{certificates_count} sertifikat dibuat untuk lomba ini.</span>
-                    <Link href={route('admin.competitions.index')} className="text-gray-700 underline">
-                        Kembali ke daftar lomba
-                    </Link>
+            <div className="stat-grid">
+                <div className="stat">
+                    <b>{certificates_count}</b>
+                    <span>Sertifikat dibuat</span>
+                    <small>Untuk lomba ini</small>
                 </div>
+                <div className="stat">
+                    <b>{templates.length}</b>
+                    <span>Template tersimpan</span>
+                    <small>Juara &amp; partisipasi</small>
+                </div>
+            </div>
 
-                {competition.results_published_at && (
-                    <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                        Hasil sudah diterbitkan. Template tetap bisa diunggah; sertifikat yang sudah ada diregenerasi bila
-                        ada koreksi nama.
+            <div className="row-between">
+                <p className="small muted">
+                    {certificates_count} sertifikat dibuat untuk lomba ini. Template baru otomatis dipakai saat sertifikat
+                    diregenerasi.
+                </p>
+                <Link href={route('admin.competitions.index')} className="btn btn--ghost btn--sm">
+                    <ArrowLeft size={16} aria-hidden />
+                    Kembali ke daftar lomba
+                </Link>
+            </div>
+
+            {competition.results_published_at && (
+                <div className="panel panel--flat">
+                    <div className="row-gap" style={{ gap: 12, alignItems: 'flex-start' }}>
+                        <Info size={18} aria-hidden style={{ color: 'var(--clay)', flex: 'none' }} />
+                        <p className="small" style={{ flex: '1 1 300px' }}>
+                            Hasil sudah diterbitkan. Template tetap bisa diunggah; sertifikat yang sudah ada diregenerasi bila
+                            ada koreksi nama.
+                        </p>
                     </div>
-                )}
+                </div>
+            )}
 
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="space-y-4">
-                        <div className="rounded border border-gray-200 bg-white p-4">
-                            <h2 className="font-semibold">Template tersimpan</h2>
-                            {templates.length === 0 && (
-                                <p className="mt-2 text-sm text-gray-500">Belum ada template. Unggah di form sebelah.</p>
-                            )}
-                            <ul className="mt-2 space-y-2">
+            <div
+                style={{
+                    display: 'grid',
+                    gap: 20,
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                    alignItems: 'start',
+                }}
+            >
+                <form
+                    className="panel stack"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        submit();
+                    }}
+                >
+                    <div className="panel__head">
+                        <div>
+                            <h2>Unggah template</h2>
+                            <p>Gambar latar sertifikat beserta posisi setiap elemen teks.</p>
+                        </div>
+                    </div>
+
+                    <fieldset className="fieldset">
+                        <legend>Jenis &amp; gambar</legend>
+
+                        <Field
+                            label="Jenis sertifikat"
+                            htmlFor="type"
+                            hint="Layout tersimpan dimuat otomatis saat jenis dipilih."
+                        >
+                            <select
+                                id="type"
+                                className="select"
+                                value={form.data.type}
+                                onChange={(event) => selectType(event.target.value)}
+                            >
+                                {typeOptions.map((type) => (
+                                    <option key={type.value} value={type.value}>
+                                        {type.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+
+                        <Field
+                            label="Gambar template"
+                            htmlFor="image"
+                            error={form.errors.image}
+                            hint="PNG atau JPG, maksimal 5 MB."
+                            required
+                        >
+                            <input
+                                id="image"
+                                type="file"
+                                accept="image/png,image/jpeg"
+                                onChange={(event) => form.setData('image', event.target.files?.[0] ?? null)}
+                                className="input"
+                                aria-invalid={Boolean(form.errors.image)}
+                            />
+                        </Field>
+                    </fieldset>
+
+                    <fieldset className="fieldset">
+                        <legend>Posisi elemen</legend>
+                        <p className="hint" style={{ marginBottom: 14 }}>
+                            Nilai dalam persen terhadap lebar dan tinggi halaman; Y dihitung dari sisi atas.
+                        </p>
+
+                        {fieldRows.map((row) => (
+                            <div key={row.key} style={{ marginBottom: 10 }}>
+                                <p className="strong small" style={{ marginBottom: 6 }}>
+                                    {row.label}
+                                </p>
+                                <div className="row-gap" style={{ gap: 10, alignItems: 'flex-start' }}>
+                                    <div style={{ flex: '1 1 84px' }}>
+                                        <Field label="X (%)" htmlFor={`${row.key}-x`}>
+                                            <input
+                                                id={`${row.key}-x`}
+                                                type="number"
+                                                min={0}
+                                                max={100}
+                                                className="input"
+                                                value={form.data.layout[row.key]?.x ?? 50}
+                                                onChange={(e) => setField(row.key, { x: Number(e.target.value) })}
+                                            />
+                                        </Field>
+                                    </div>
+                                    <div style={{ flex: '1 1 84px' }}>
+                                        <Field label="Y (%)" htmlFor={`${row.key}-y`}>
+                                            <input
+                                                id={`${row.key}-y`}
+                                                type="number"
+                                                min={0}
+                                                max={100}
+                                                className="input"
+                                                value={form.data.layout[row.key]?.y ?? 50}
+                                                onChange={(e) => setField(row.key, { y: Number(e.target.value) })}
+                                            />
+                                        </Field>
+                                    </div>
+                                    <div style={{ flex: '1 1 84px' }}>
+                                        <Field label="Ukuran" htmlFor={`${row.key}-size`}>
+                                            <input
+                                                id={`${row.key}-size`}
+                                                type="number"
+                                                min={1}
+                                                max={80}
+                                                className="input"
+                                                value={form.data.layout[row.key]?.size ?? 24}
+                                                onChange={(e) => setField(row.key, { size: Number(e.target.value) })}
+                                            />
+                                        </Field>
+                                    </div>
+                                    <div style={{ flex: '1 1 84px' }}>
+                                        <Field label="Warna" htmlFor={`${row.key}-color`}>
+                                            <input
+                                                id={`${row.key}-color`}
+                                                type="color"
+                                                className="input"
+                                                style={{ padding: 6 }}
+                                                value={form.data.layout[row.key]?.color ?? '#000000'}
+                                                onChange={(e) => setField(row.key, { color: e.target.value })}
+                                            />
+                                        </Field>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </fieldset>
+
+                    <div className="row-between">
+                        <button
+                            type="submit"
+                            className="btn btn--clay"
+                            disabled={form.processing || form.data.image === null}
+                        >
+                            <Save size={18} aria-hidden />
+                            {form.processing ? 'Menyimpan…' : 'Simpan template'}
+                        </button>
+                        <button type="button" className="btn btn--ghost" onClick={() => preview(form.data.type)}>
+                            <FileDown size={16} aria-hidden />
+                            Pratinjau PDF
+                        </button>
+                    </div>
+                </form>
+
+                <div className="stack">
+                    <div className="panel">
+                        <div className="panel__head">
+                            <div>
+                                <h2>Template tersimpan</h2>
+                                <p>Template aktif untuk lomba ini.</p>
+                            </div>
+                        </div>
+
+                        {templates.length === 0 ? (
+                            <EmptyState
+                                title="Belum ada template"
+                                description="Unggah gambar template pada formulir untuk mulai membuat sertifikat."
+                            />
+                        ) : (
+                            <ul className="stack-sm" style={{ gap: 12, listStyle: 'none', padding: 0, margin: 0 }}>
                                 {templates.map((t) => (
-                                    <li key={t.id} className="flex flex-wrap items-center gap-2 text-sm">
-                                        <span
-                                            className={`rounded px-2 py-1 text-xs ${
-                                                t.type === 'winner'
-                                                    ? 'bg-amber-100 text-amber-900'
-                                                    : 'bg-blue-100 text-blue-800'
-                                            }`}
-                                        >
-                                            {t.type_label}
-                                        </span>
-                                        <a href={t.image_url} target="_blank" rel="noreferrer" className="text-emerald-700 underline">
-                                            Lihat gambar
-                                        </a>
-                                        <button onClick={() => preview(t.type)} className="text-gray-700 underline">
-                                            Pratinjau PDF
-                                        </button>
+                                    <li key={t.id} className="panel panel--flat">
+                                        <div className="row-between" style={{ gap: 12 }}>
+                                            <div className="row-gap" style={{ gap: 10 }}>
+                                                <StatusBadge value={t.type} label={t.type_label} />
+                                                <span className="small muted">
+                                                    {Object.keys(t.layout ?? {}).length} elemen diatur
+                                                </span>
+                                            </div>
+                                            <div className="row-gap" style={{ gap: 8 }}>
+                                                <a
+                                                    href={t.image_url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="btn btn--ghost btn--sm"
+                                                >
+                                                    <ExternalLink size={15} aria-hidden />
+                                                    Lihat gambar
+                                                </a>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn--ghost btn--sm"
+                                                    onClick={() => preview(t.type)}
+                                                >
+                                                    <FileDown size={15} aria-hidden />
+                                                    Pratinjau PDF
+                                                </button>
+                                            </div>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
-                        </div>
-
-                        <div className="rounded border border-gray-200 bg-white p-4">
-                            <h2 className="font-semibold">Unggah template</h2>
-
-                            <div className="mt-3">
-                                <label htmlFor="type" className="block text-sm font-medium">
-                                    Jenis sertifikat
-                                </label>
-                                <select
-                                    id="type"
-                                    value={form.data.type}
-                                    onChange={(event) => selectType(event.target.value)}
-                                    className="mt-1 min-h-11 w-full rounded border-gray-300 text-sm"
-                                >
-                                    {types.map((type) => (
-                                        <option key={type.value} value={type.value}>
-                                            {type.name === 'winner' ? 'Juara' : 'Partisipasi'}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="mt-3">
-                                <label htmlFor="image" className="block text-sm font-medium">
-                                    Gambar template (PNG/JPG, maks 5 MB)
-                                </label>
-                                <input
-                                    id="image"
-                                    type="file"
-                                    accept="image/png,image/jpeg"
-                                    onChange={(event) => form.setData('image', event.target.files?.[0] ?? null)}
-                                    className="mt-1 block w-full text-sm"
-                                />
-                                {form.errors.image && <p className="mt-1 text-xs text-red-600">{form.errors.image}</p>}
-                            </div>
-
-                            <div className="mt-4">
-                                <p className="text-sm font-medium">Posisi elemen (persen, y dari atas)</p>
-                                <div className="mt-2 space-y-2">
-                                    {fieldRows.map((row) => (
-                                        <div key={row.key} className="grid grid-cols-2 gap-2 rounded border border-gray-100 p-2 sm:grid-cols-5">
-                                            <span className="col-span-2 text-xs font-medium sm:col-span-1">
-                                                {row.label}
-                                            </span>
-                                            <label className="text-xs text-gray-500">
-                                                X%
-                                                <input
-                                                    type="number"
-                                                    min={0}
-                                                    max={100}
-                                                    value={form.data.layout[row.key]?.x ?? 50}
-                                                    onChange={(e) => setField(row.key, { x: Number(e.target.value) })}
-                                                    className="mt-0.5 w-full rounded border-gray-300 text-sm"
-                                                />
-                                            </label>
-                                            <label className="text-xs text-gray-500">
-                                                Y%
-                                                <input
-                                                    type="number"
-                                                    min={0}
-                                                    max={100}
-                                                    value={form.data.layout[row.key]?.y ?? 50}
-                                                    onChange={(e) => setField(row.key, { y: Number(e.target.value) })}
-                                                    className="mt-0.5 w-full rounded border-gray-300 text-sm"
-                                                />
-                                            </label>
-                                            <label className="text-xs text-gray-500">
-                                                Ukuran
-                                                <input
-                                                    type="number"
-                                                    min={1}
-                                                    max={80}
-                                                    value={form.data.layout[row.key]?.size ?? 24}
-                                                    onChange={(e) => setField(row.key, { size: Number(e.target.value) })}
-                                                    className="mt-0.5 w-full rounded border-gray-300 text-sm"
-                                                />
-                                            </label>
-                                            <label className="text-xs text-gray-500">
-                                                Warna
-                                                <input
-                                                    type="color"
-                                                    value={form.data.layout[row.key]?.color ?? '#000000'}
-                                                    onChange={(e) => setField(row.key, { color: e.target.value })}
-                                                    className="mt-0.5 w-full rounded border-gray-300 text-sm"
-                                                />
-                                            </label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <PrimaryButton type="button" onClick={submit} disabled={form.processing || form.data.image === null}>
-                                Simpan template
-                            </PrimaryButton>
-                        </div>
+                        )}
                     </div>
 
-                    <div className="rounded border border-gray-200 bg-white p-4">
-                        <h2 className="font-semibold">Panduan</h2>
-                        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-600">
-                            <li>Unggah gambar latar sertifikat (PNG/JPG, maks 5 MB).</li>
-                            <li>Atur posisi nama, lomba/juara, nomor, dan QR dalam persen terhadap ukuran halaman.</li>
-                            <li>Gunakan pratinjau PDF untuk memeriksa tata letak sebelum hasil diterbitkan.</li>
-                            <li>Nama panjang otomatis diperkecil agar muat satu baris.</li>
-                            <li>QR memuat tautan verifikasi keaslian sertifikat.</li>
-                        </ul>
-
-                        <div className="mt-4">
-                            <PrimaryButton onClick={() => preview(form.data.type)}>Pratinjau PDF (jenis terpilih)</PrimaryButton>
+                    <div className="panel">
+                        <div className="panel__head">
+                            <div>
+                                <h2>Panduan</h2>
+                                <p>Langkah singkat menyiapkan sertifikat.</p>
+                            </div>
                         </div>
+
+                        <ul className="stack-sm" style={{ gap: 12, listStyle: 'none', padding: 0, margin: 0 }}>
+                            {guide.map((item, index) => (
+                                <li key={index} className="row-gap" style={{ gap: 10, alignItems: 'flex-start' }}>
+                                    <span aria-hidden style={{ display: 'inline-flex', color: 'var(--clay)', flex: 'none' }}>
+                                        {item.icon}
+                                    </span>
+                                    <span className="small" style={{ flex: '1 1 220px' }}>
+                                        {item.text}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 </div>
             </div>

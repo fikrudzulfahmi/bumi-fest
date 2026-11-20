@@ -1,8 +1,10 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import ConfirmDialog from '@/Components/app/ConfirmDialog';
+import FlashMessage from '@/Components/app/FlashMessage';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft, ArrowLeftRight, Check, FileUp, Send, XCircle } from 'lucide-react';
+import { useState } from 'react';
 
 interface Registration {
     id: number;
@@ -49,10 +51,20 @@ interface Props {
     level: string;
 }
 
+interface SwapRequest {
+    out: number;
+    in: number;
+}
+
 export default function Edit({ registration, competition, participants, members, level }: Props) {
     const isLocked = registration.status === 'awaiting_verification' || registration.status === 'verified';
     const [memberForDoc, setMemberForDoc] = useState(0);
     const [docType, setDocType] = useState('');
+    const [swapOut, setSwapOut] = useState(members[0]?.id ?? 0);
+    const [swapIn, setSwapIn] = useState(0);
+    const [confirmSwap, setConfirmSwap] = useState<SwapRequest | null>(null);
+    const [confirmSubmit, setConfirmSubmit] = useState(false);
+    const [confirmCancel, setConfirmCancel] = useState(false);
 
     const uploadDocument = async (memberId: number, file: File) => {
         const data = new FormData();
@@ -67,172 +79,329 @@ export default function Edit({ registration, competition, participants, members,
     };
 
     const swap = async (outId: number, inId: number) => {
-        if (!confirm('Ganti anggota ini?')) return;
         await router.post(
             route('registrations.swap-member', registration.id),
             { out_participant_id: outId, in_participant_id: inId },
-            { preserveScroll: true }
+            { preserveScroll: true, onFinish: () => setConfirmSwap(null) }
         );
     };
 
     const activeMember = members.find((m) => m.id === memberForDoc) ?? members[0];
 
     const submit = () => {
-        if (confirm('Kirim pendaftaran? Slot akan ditahan dan tagihan dibuat.')) {
-            router.post(route('registrations.submit', { level, competition: competition.slug, registration: registration.id }));
-        }
+        router.post(
+            route('registrations.submit', { level, competition: competition.slug, registration: registration.id }),
+            {},
+            { onFinish: () => setConfirmSubmit(false) }
+        );
     };
 
     const cancel = () => {
-        if (confirm('Batalkan pendaftaran ini?')) {
-            router.post(route('registrations.cancel', registration.id));
-        }
+        router.post(route('registrations.cancel', registration.id), {}, { onFinish: () => setConfirmCancel(false) });
     };
 
+    const swapTarget = swapIn > 0 ? participants.find((p) => p.id === swapIn) : undefined;
+    const swapSource = members.find((m) => m.id === swapOut);
+
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Pendaftaran: {competition.name}</h1>}>
+        <AuthenticatedLayout header={<h1>Pendaftaran: {competition.name}</h1>}>
             <Head title="Detail Pendaftaran" />
 
-            <div className="max-w-3xl mx-auto p-4 space-y-4">
-                <div className="border border-gray-200 rounded p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <p className="text-xs text-gray-500">Kode Registrasi</p>
-                        <p className="font-mono">{registration.code || '(belum dibuat)'}</p>
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-500">Status</p>
-                        <p>{registration.status}</p>
-                    </div>
-                    {registration.team_name && (
-                        <div>
-                            <p className="text-xs text-gray-500">Nama Tim</p>
-                            <p>{registration.team_name}</p>
-                        </div>
-                    )}
-                    <div>
-                        <p className="text-xs text-gray-500">Persetujuan</p>
-                        <p>{registration.consented_at ? '✓ Disetujui' : 'Belum disetujui'}</p>
-                    </div>
-                </div>
+            <FlashMessage />
 
-                <div className="border border-gray-200 rounded p-4">
-                    <p className="text-xs text-gray-500 mb-2">Siswa yang ikut</p>
-                    <ul className="list-disc pl-5 text-sm">
-                        {participants.map((p) => (
-                            <li key={p.id}>{p.name} — Kelas {p.grade}, {p.school_name}</li>
-                        ))}
-                    </ul>
-                </div>
+            <div className="stack">
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Ringkasan entri</span>
+                            <h2>{registration.team_name ?? competition.name}</h2>
+                            <p className="muted">
+                                Nomor pendaftaran <span className="tnum strong">{registration.code || '(belum dibuat)'}</span>
+                            </p>
+                        </div>
+                        <Link className="btn btn--ghost btn--sm" href={route('registrations.index')}>
+                            <ArrowLeft size={16} aria-hidden />
+                            Daftar pendaftaran
+                        </Link>
+                    </div>
+
+                    <div className="stat-grid">
+                        <div className="stat">
+                            <span>Status entri</span>
+                            <div style={{ marginTop: 8 }}>
+                                <StatusBadge value={registration.status} />
+                            </div>
+                        </div>
+                        <div className="stat">
+                            <span>Nama tim</span>
+                            <b style={{ fontSize: '1.2rem' }}>{registration.team_name ?? '—'}</b>
+                        </div>
+                        <div className="stat">
+                            <span>Persetujuan juknis</span>
+                            <b style={{ fontSize: '1.2rem' }}>{registration.consented_at ? 'Disetujui' : 'Belum'}</b>
+                            <small>{registration.consented_at ? 'Terverifikasi sistem' : 'Perlu persetujuan peserta'}</small>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Anggota</span>
+                            <h3>Siswa yang ikut</h3>
+                            <p className="muted">{members.length} siswa terdaftar pada entri ini.</p>
+                        </div>
+                    </div>
+
+                    {members.length > 0 ? (
+                        <div className="stack-sm">
+                            {members.map((m) => (
+                                <div key={m.id} className="row-between" style={{ gap: 12 }}>
+                                    <div>
+                                        <span className="strong">{m.name}</span>
+                                        <span className="small muted" style={{ display: 'block' }}>
+                                            Kelas {m.grade} · {m.school_name}
+                                        </span>
+                                    </div>
+                                    <div className="row-gap" style={{ gap: 6 }}>
+                                        {m.uploaded_documents.length > 0 ? (
+                                            m.uploaded_documents.map((doc) => (
+                                                <span key={doc} className="tag tag--saffron">
+                                                    {doc}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="small muted">Belum ada dokumen</span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="small muted">Daftar siswa belum terbentuk. Lengkapi pilihan siswa pada draf.</p>
+                    )}
+                </section>
 
                 {competition.required_documents?.length ? (
-                    <div className="border border-gray-200 rounded p-4">
-                        <p className="text-xs text-gray-500 mb-2">Dokumen wajib</p>
-                        <ul className="list-disc pl-5 text-sm text-gray-600 mb-3">
-                            {competition.required_documents.map((d) => <li key={d}>{d}</li>)}
+                    <section className="panel">
+                        <div className="panel__head">
+                            <div>
+                                <span className="kicker">Berkas</span>
+                                <h3>Dokumen wajib</h3>
+                                <p className="muted">Unggah satu dokumen per siswa yang mengikuti lomba.</p>
+                            </div>
+                        </div>
+
+                        <ul className="small muted" style={{ margin: '0 0 16px 18px' }}>
+                            {competition.required_documents.map((d) => (
+                                <li key={d}>{d}</li>
+                            ))}
                         </ul>
 
-                        <div className="space-y-3">
-                            <div>
-                                <label className="text-sm font-medium block mb-1">Siswa</label>
+                        <div className="row-gap" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                            <div style={{ flex: '1 1 220px' }}>
+                                <label className="label" htmlFor="doc-member">
+                                    Siswa
+                                </label>
                                 <select
+                                    id="doc-member"
+                                    className="select"
                                     value={activeMember?.id ?? 0}
                                     onChange={(e) => setMemberForDoc(Number(e.target.value))}
-                                    className="border border-gray-300 rounded px-3 py-2 w-full min-h-[44px]"
                                 >
                                     {members.map((m) => (
-                                        <option key={m.id} value={m.id}>{m.name} — Kelas {m.grade}</option>
+                                        <option key={m.id} value={m.id}>
+                                            {m.name} — Kelas {m.grade}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
 
-                            <div>
-                                <label className="text-sm font-medium block mb-1">Jenis dokumen</label>
+                            <div style={{ flex: '1 1 220px' }}>
+                                <label className="label" htmlFor="doc-type">
+                                    Jenis dokumen
+                                </label>
                                 <select
+                                    id="doc-type"
+                                    className="select"
                                     value={docType}
                                     onChange={(e) => setDocType(e.target.value)}
-                                    className="border border-gray-300 rounded px-3 py-2 w-full min-h-[44px]"
                                 >
                                     <option value="">Pilih dokumen</option>
                                     {competition.required_documents.map((d) => (
-                                        <option key={d} value={d}>{d}</option>
+                                        <option key={d} value={d}>
+                                            {d}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <label className="label" htmlFor="doc-file" style={{ display: 'block', marginBottom: 6 }}>
+                            Berkas (jpg/png/pdf, maksimal 5 MB)
+                        </label>
+                        <input
+                            id="doc-file"
+                            type="file"
+                            className="input"
+                            accept=".jpg,.jpeg,.png,.pdf"
+                            onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f && activeMember) uploadDocument(activeMember.id, f);
+                            }}
+                        />
+
+                        {activeMember?.uploaded_documents.length ? (
+                            <p className="small" style={{ marginTop: 10, color: 'var(--moss)' }}>
+                                <Check size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> Terunggah:{' '}
+                                {activeMember.uploaded_documents.join(', ')}
+                            </p>
+                        ) : null}
+                    </section>
+                ) : null}
+
+                {members.length > 0 && !isLocked && (
+                    <section className="panel">
+                        <div className="panel__head">
+                            <div>
+                                <span className="kicker">Perubahan anggota</span>
+                                <h3>Ganti anggota</h3>
+                                <p className="muted">Biaya pendaftaran tidak berubah saat mengganti anggota.</p>
+                            </div>
+                        </div>
+
+                        <div className="row-gap" style={{ alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                            <div style={{ flex: '1 1 220px' }}>
+                                <label className="label" htmlFor="swap-out">
+                                    Anggota keluar
+                                </label>
+                                <select
+                                    id="swap-out"
+                                    className="select"
+                                    value={swapOut}
+                                    onChange={(e) => setSwapOut(Number(e.target.value))}
+                                >
+                                    {members.map((m) => (
+                                        <option key={m.id} value={m.id}>
+                                            {m.name} (keluar)
+                                        </option>
                                     ))}
                                 </select>
                             </div>
 
-                            <div>
-                                <input
-                                    type="file"
-                                    accept=".jpg,.jpeg,.png,.pdf"
-                                    onChange={(e) => {
-                                        const f = e.target.files?.[0];
-                                        if (f && activeMember) uploadDocument(activeMember.id, f);
-                                    }}
-                                    className="text-sm"
-                                />
-                                <p className="text-xs text-gray-400 mt-1">jpg/png/pdf, maksimal 5 MB.</p>
-                                {activeMember?.uploaded_documents.length ? (
-                                    <p className="text-xs text-green-600 mt-1">
-                                        Terunggah: {activeMember.uploaded_documents.join(', ')}
-                                    </p>
-                                ) : null}
+                            <div style={{ flex: '1 1 220px' }}>
+                                <label className="label" htmlFor="swap-in">
+                                    Pengganti
+                                </label>
+                                <select
+                                    id="swap-in"
+                                    className="select"
+                                    value={swapIn}
+                                    onChange={(e) => setSwapIn(Number(e.target.value))}
+                                >
+                                    <option value={0}>Pilih pengganti…</option>
+                                    {participants
+                                        .filter((p) => !members.some((m) => m.id === p.id))
+                                        .map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.name}
+                                            </option>
+                                        ))}
+                                </select>
                             </div>
-                        </div>
-                    </div>
-                ) : null}
 
-                {members.length > 0 && !isLocked && (
-                    <div className="border border-gray-200 rounded p-4">
-                        <p className="text-xs text-gray-500 mb-2">Ganti anggota (swap)</p>
-                        <div className="flex items-center gap-2 text-sm">
-                            <select
-                                id="swap-out"
-                                defaultValue={members[0]?.id ?? 0}
-                                className="border border-gray-300 rounded px-2 py-1"
-                            >
-                                {members.map((m) => (
-                                    <option key={m.id} value={m.id}>{m.name} (keluar)</option>
-                                ))}
-                            </select>
-                            <span>→</span>
-                            <select
-                                id="swap-in"
-                                defaultValue=""
-                                className="border border-gray-300 rounded px-2 py-1"
-                            >
-                                <option value="">Pilih pengganti…</option>
-                                {participants
-                                    .filter((p) => !members.some((m) => m.id === p.id))
-                                    .map((p) => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
-                            </select>
                             <button
-                                onClick={() => {
-                                    const out = Number((document.getElementById('swap-out') as HTMLSelectElement)?.value ?? 0);
-                                    const inId = Number((document.getElementById('swap-in') as HTMLSelectElement)?.value ?? 0);
-                                    if (out && inId) swap(out, inId);
-                                }}
-                                className="text-blue-600 hover:underline"
+                                type="button"
+                                className="btn btn--ghost btn--sm"
+                                disabled={!swapOut || !swapIn}
+                                onClick={() => setConfirmSwap({ out: swapOut, in: swapIn })}
                             >
+                                <ArrowLeftRight size={16} aria-hidden />
                                 Ganti
                             </button>
                         </div>
-                        <p className="text-xs text-gray-400 mt-2">Biaya tidak berubah saat mengganti anggota.</p>
-                    </div>
+                    </section>
                 )}
 
-                <div className="flex gap-3 flex-wrap">
-                    {!isLocked && registration.status === 'draft' && (
-                        <PrimaryButton onClick={submit}>Kirim Pendaftaran</PrimaryButton>
-                    )}
-                    {!isLocked && ['awaiting_payment', 'rejected'].includes(registration.status) && (
-                        <SecondaryButton onClick={cancel}>Batalkan</SecondaryButton>
-                    )}
-                    <Link href={route('registrations.index')}>
-                        <SecondaryButton>Kembali ke Daftar</SecondaryButton>
-                    </Link>
-                </div>
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Langkah berikutnya</span>
+                            <h3>Kirim atau batalkan entri</h3>
+                            <p className="muted">
+                                Entri yang dikirim akan menahan slot dan menerbitkan tagihan pembayaran.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="row-gap" style={{ flexWrap: 'wrap' }}>
+                        {!isLocked && registration.status === 'draft' && (
+                            <button type="button" className="btn btn--clay" onClick={() => setConfirmSubmit(true)}>
+                                <Send size={18} aria-hidden />
+                                Kirim Pendaftaran
+                            </button>
+                        )}
+                        {!isLocked && ['awaiting_payment', 'rejected'].includes(registration.status) && (
+                            <button type="button" className="btn btn--danger" onClick={() => setConfirmCancel(true)}>
+                                <XCircle size={18} aria-hidden />
+                                Batalkan
+                            </button>
+                        )}
+                        <Link className="btn btn--ghost" href={route('registrations.index')}>
+                            Kembali ke Daftar
+                        </Link>
+                    </div>
+                </section>
             </div>
+
+            <ConfirmDialog
+                show={confirmSwap !== null}
+                title="Ganti anggota tim?"
+                message={
+                    <p>
+                        <span className="strong">{swapSource?.name ?? 'Anggota'}</span> akan diganti oleh{' '}
+                        <span className="strong">{swapTarget?.name ?? 'anggota baru'}</span>. Biaya pendaftaran tidak
+                        berubah.
+                    </p>
+                }
+                confirmLabel="Ya, ganti"
+                onConfirm={() => {
+                    if (confirmSwap) {
+                        swap(confirmSwap.out, confirmSwap.in);
+                    }
+                }}
+                onCancel={() => setConfirmSwap(null)}
+            />
+
+            <ConfirmDialog
+                show={confirmSubmit}
+                title="Kirim pendaftaran?"
+                message={
+                    <p>
+                        Slot peserta akan ditahan dan tagihan pembayaran dibuat. Setelah dikirim, daftar anggota tidak
+                        bisa diubah sampai panitia memverifikasi.
+                    </p>
+                }
+                confirmLabel="Ya, kirim"
+                onConfirm={submit}
+                onCancel={() => setConfirmSubmit(false)}
+            />
+
+            <ConfirmDialog
+                show={confirmCancel}
+                title="Batalkan pendaftaran?"
+                message={
+                    <p>
+                        Pendaftaran <span className="strong">{registration.code || competition.name}</span> akan
+                        dibatalkan permanen dan slot peserta dilepas.
+                    </p>
+                }
+                confirmLabel="Ya, batalkan"
+                cancelLabel="Tidak jadi"
+                danger
+                onConfirm={cancel}
+                onCancel={() => setConfirmCancel(false)}
+            />
         </AuthenticatedLayout>
     );
 }

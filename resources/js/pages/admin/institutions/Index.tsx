@@ -1,6 +1,9 @@
+import Field from '@/Components/app/Field';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import Pagination from '@/Components/app/Pagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
 import { Head, Link, router } from '@inertiajs/react';
+import { Eye, Search } from 'lucide-react';
 import { useState } from 'react';
 
 interface Institution {
@@ -16,6 +19,7 @@ interface Paginated {
     data: Institution[];
     links: Array<{ url: string | null; label: string; active: boolean }>;
     total: number;
+    per_page?: number;
 }
 
 interface Props {
@@ -31,61 +35,93 @@ export default function Index({ institutions, filters }: Props) {
     };
 
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Data Lembaga</h1>}>
+        <AuthenticatedLayout
+            header={
+                <div>
+                    <span className="kicker">Panitia</span>
+                    <h1>Data Lembaga</h1>
+                </div>
+            }
+        >
             <Head title="Data Lembaga" />
 
-            <div className="mx-auto max-w-6xl space-y-4 p-4">
-                <div className="flex flex-wrap items-end gap-2 rounded border border-gray-200 bg-white p-3">
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Cari</span>
-                        <input
-                            className="rounded border-gray-300 text-sm"
-                            value={q}
-                            onChange={(e) => setQ(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && apply()}
-                            placeholder="nama / NPSN / kota"
-                        />
-                    </label>
-                    <PrimaryButton onClick={apply}>Cari</PrimaryButton>
-                </div>
+            <FlashMessage />
 
-                <div className="overflow-x-auto rounded border border-gray-200 bg-white">
-                    <table className="min-w-full text-sm">
+            <div className="row-between">
+                <p className="muted" style={{ fontSize: 15 }}>
+                    {institutions.total} lembaga terdaftar.
+                </p>
+            </div>
+
+            <section className="panel panel--flat">
+                <div className="row-between" style={{ alignItems: 'flex-end' }}>
+                    <div style={{ flex: '1 1 260px', maxWidth: 420 }}>
+                        <Field label="Cari lembaga" htmlFor="institution-q" hint="Nama, NPSN, atau kota.">
+                            <input
+                                id="institution-q"
+                                className="input"
+                                value={q}
+                                onChange={(e) => setQ(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && apply()}
+                                placeholder="nama / NPSN / kota"
+                            />
+                        </Field>
+                    </div>
+                    <button type="button" className="btn btn--clay btn--sm" onClick={apply}>
+                        <Search size={16} aria-hidden />
+                        Cari
+                    </button>
+                </div>
+            </section>
+
+            {institutions.data.length === 0 ? (
+                <EmptyState
+                    title="Belum ada lembaga"
+                    description="Lembaga akan muncul setelah akun sekolah menyelesaikan pendaftaran."
+                />
+            ) : (
+                <div className="table-wrap">
+                    <table className="data">
                         <thead>
-                            <tr className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                                <th className="px-3 py-2">Lembaga</th>
-                                <th className="px-3 py-2">NPSN</th>
-                                <th className="px-3 py-2">Kota</th>
-                                <th className="px-3 py-2">Akun</th>
-                                <th className="px-3 py-2">Siswa</th>
-                                <th className="px-3 py-2">Aksi</th>
+                            <tr>
+                                <th>Lembaga</th>
+                                <th>NPSN</th>
+                                <th>Kota</th>
+                                <th>Akun</th>
+                                <th>Siswa</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {institutions.data.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} className="px-3 py-8 text-center text-gray-500">
-                                        Belum ada lembaga.
-                                    </td>
-                                </tr>
-                            )}
                             {institutions.data.map((item) => (
-                                <tr key={item.id} className="border-t border-gray-100">
-                                    <td className="px-3 py-2 font-medium">{item.name}</td>
-                                    <td className="px-3 py-2 text-gray-600">{item.npsn ?? '—'}</td>
-                                    <td className="px-3 py-2 text-gray-600">{item.city ?? '—'}</td>
-                                    <td className="px-3 py-2">
-                                        <p className="text-xs">{item.user?.email ?? '—'}</p>
+                                <tr key={item.id}>
+                                    <td data-label="Lembaga" className="strong">
+                                        {item.name}
+                                    </td>
+                                    <td data-label="NPSN" className="num nowrap">
+                                        {item.npsn ?? '—'}
+                                    </td>
+                                    <td data-label="Kota">{item.city ?? '—'}</td>
+                                    <td data-label="Akun">
+                                        <span className="small">{item.user?.name ?? '—'}</span>
+                                        <span className="small muted" style={{ display: 'block' }}>
+                                            {item.user?.email ?? '—'}
+                                        </span>
                                         {item.user && !item.user.is_active && (
-                                            <span className="text-xs text-red-600">nonaktif</span>
+                                            <span className="badge badge--bad" style={{ marginTop: 4 }}>
+                                                Nonaktif
+                                            </span>
                                         )}
                                     </td>
-                                    <td className="px-3 py-2">{item.participants_count}</td>
-                                    <td className="px-3 py-2">
+                                    <td data-label="Siswa" className="num strong">
+                                        {item.participants_count}
+                                    </td>
+                                    <td data-label="Aksi">
                                         <Link
                                             href={route('admin.institutions.show', item.id)}
-                                            className="text-xs text-blue-600 hover:underline"
+                                            className="btn btn--ghost btn--sm"
                                         >
+                                            <Eye size={15} aria-hidden />
                                             Detail
                                         </Link>
                                     </td>
@@ -94,31 +130,9 @@ export default function Index({ institutions, filters }: Props) {
                         </tbody>
                     </table>
                 </div>
+            )}
 
-                <div className="flex flex-wrap items-center gap-1 text-xs">
-                    {institutions.links.map((link, index) =>
-                        link.url ? (
-                            <Link
-                                key={index}
-                                href={link.url}
-                                className={`rounded border px-2 py-1 ${
-                                    link.active
-                                        ? 'border-gray-800 bg-gray-800 text-white'
-                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ) : (
-                            <span
-                                key={index}
-                                className="rounded border border-gray-100 px-2 py-1 text-gray-300"
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ),
-                    )}
-                    <span className="ml-2 text-gray-500">{institutions.total} lembaga</span>
-                </div>
-            </div>
+            <Pagination links={institutions.links} total={institutions.total} perPage={institutions.per_page} />
         </AuthenticatedLayout>
     );
 }

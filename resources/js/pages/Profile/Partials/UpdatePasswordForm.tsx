@@ -1,28 +1,12 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import { Transition } from '@headlessui/react';
+import Field from '@/Components/app/Field';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler, useRef } from 'react';
 
-export default function UpdatePasswordForm({
-    className = '',
-}: {
-    className?: string;
-}) {
+export default function UpdatePasswordForm({ className = '' }: { className?: string }) {
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 
-    const {
-        data,
-        setData,
-        errors,
-        put,
-        reset,
-        processing,
-        recentlySuccessful,
-    } = useForm({
+    const { data, setData, errors, put, reset, processing, recentlySuccessful } = useForm({
         current_password: '',
         password: '',
         password_confirmation: '',
@@ -49,96 +33,61 @@ export default function UpdatePasswordForm({
     };
 
     return (
-        <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Update Password
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-600">
-                    Ensure your account is using a long, random password to stay
-                    secure.
+        <section className={`stack ${className}`}>
+            <div>
+                <h2 style={{ fontSize: '1.4rem' }}>Ubah kata sandi</h2>
+                <p className="muted" style={{ marginTop: 8, fontSize: 15 }}>
+                    Gunakan kata sandi panjang dan acak agar akun Anda tetap aman.
                 </p>
-            </header>
+            </div>
 
-            <form onSubmit={updatePassword} className="mt-6 space-y-6">
-                <div>
-                    <InputLabel
-                        htmlFor="current_password"
-                        value="Current Password"
-                    />
-
-                    <TextInput
+            <form onSubmit={updatePassword} className="stack">
+                <Field label="Kata sandi saat ini" htmlFor="current_password" error={errors.current_password} required>
+                    <input
                         id="current_password"
                         ref={currentPasswordInput}
+                        type="password"
+                        className="input"
                         value={data.current_password}
-                        onChange={(e) =>
-                            setData('current_password', e.target.value)
-                        }
-                        type="password"
-                        className="mt-1 block w-full"
                         autoComplete="current-password"
+                        onChange={(e) => setData('current_password', e.target.value)}
+                        aria-invalid={Boolean(errors.current_password)}
                     />
+                </Field>
 
-                    <InputError
-                        message={errors.current_password}
-                        className="mt-2"
-                    />
-                </div>
-
-                <div>
-                    <InputLabel htmlFor="password" value="New Password" />
-
-                    <TextInput
-                        id="password"
+                <Field label="Kata sandi baru" htmlFor="new_password" error={errors.password} required>
+                    <input
+                        id="new_password"
                         ref={passwordInput}
+                        type="password"
+                        className="input"
                         value={data.password}
+                        autoComplete="new-password"
                         onChange={(e) => setData('password', e.target.value)}
-                        type="password"
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
+                        aria-invalid={Boolean(errors.password)}
                     />
+                </Field>
 
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div>
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
-
-                    <TextInput
+                <Field label="Ulangi kata sandi baru" htmlFor="password_confirmation" required>
+                    <input
                         id="password_confirmation"
-                        value={data.password_confirmation}
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
                         type="password"
-                        className="mt-1 block w-full"
+                        className="input"
+                        value={data.password_confirmation}
                         autoComplete="new-password"
+                        onChange={(e) => setData('password_confirmation', e.target.value)}
                     />
+                </Field>
 
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
-
-                    <Transition
-                        show={recentlySuccessful}
-                        enter="transition ease-in-out"
-                        enterFrom="opacity-0"
-                        leave="transition ease-in-out"
-                        leaveTo="opacity-0"
-                    >
-                        <p className="text-sm text-gray-600">
-                            Saved.
-                        </p>
-                    </Transition>
+                <div className="row-gap">
+                    <button type="submit" className="btn btn--clay" disabled={processing}>
+                        {processing ? 'Menyimpan…' : 'Simpan kata sandi'}
+                    </button>
+                    {recentlySuccessful && (
+                        <span className="small strong" role="status">
+                            Tersimpan.
+                        </span>
+                    )}
                 </div>
             </form>
         </section>

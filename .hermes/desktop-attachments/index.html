@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bumifest — Pratinjau Desain</title>
+<meta name="theme-color" content="#b4431f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,800;1,9..144,700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--clay:#b4431f;--clay-d:#8a3016;--saffron:#f4b942;--sand:#f6eddf;--sand-2:#ecdfca;--paper:#fffaf2;--ink:#2a1b14;--ink-2:#5a4538;--moss:#4b6a3d;--D:"Fraunces",Georgia,serif;--B:"DM Sans",system-ui,sans-serif;--r:14px;--hard:4px 4px 0 var(--ink);--w:1180px;--pad:clamp(20px,5vw,44px)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--sand);color:var(--ink-2);font:400 17px/1.65 var(--B);-webkit-font-smoothing:antialiased;overflow-x:clip}
+h1,h2,h3{font-family:var(--D);color:var(--ink);margin:0;line-height:1.02;letter-spacing:-.02em;font-weight:800;text-wrap:balance}
+p{margin:0}
+.wrap{width:min(100% - 2*var(--pad),var(--w));margin-inline:auto}
+:focus-visible{outline:3px solid var(--saffron);outline-offset:3px}
+::selection{background:var(--saffron);color:var(--ink)}
+
+/* tombol: kotak membulat + bayangan keras */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:50px;padding:12px 24px;border:2px solid var(--ink);border-radius:12px;background:var(--saffron);color:var(--ink);font:700 15px var(--B);text-decoration:none;box-shadow:var(--hard);transition:transform .15s,box-shadow .15s;cursor:pointer}
+.btn:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+.btn:active{transform:translate(4px,4px);box-shadow:0 0 var(--ink)}
+.btn--clay{background:var(--clay);color:#fff}
+.btn--ghost{background:var(--paper)}
+.btn--sm{min-height:42px;padding:8px 16px;font-size:14px}
+
+/* header */
+.bar{position:sticky;top:0;z-index:50;background:var(--sand);border-bottom:2px solid var(--ink)}
+.bar .wrap{display:flex;align-items:center;justify-content:space-between;min-height:68px;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font:800 25px var(--D);color:var(--ink);letter-spacing:-.03em}
+.logo i{width:24px;height:24px;border-radius:50%;background:var(--clay);border:2px solid var(--ink);box-shadow:inset -7px -5px 0 var(--saffron)}
+.nav{display:flex;align-items:center;gap:6px}
+.nav a:not(.btn){padding:8px 14px;border-radius:10px;font-weight:600;font-size:15px;text-decoration:none;color:var(--ink)}
+.nav a:not(.btn):hover{background:var(--sand-2)}
+.burger{display:none;width:44px;height:44px;place-items:center;border:2px solid var(--ink);border-radius:12px;background:var(--paper);cursor:pointer;font:700 20px var(--B);color:var(--ink)}
+@media(max-width:900px){.burger{display:grid}.nav{display:none;position:absolute;left:0;right:0;top:100%;flex-direction:column;align-items:stretch;background:var(--sand);border-bottom:2px solid var(--ink);padding:12px var(--pad) 22px}.nav.open{display:flex}.nav .btn{margin-top:8px}}
+
+/* hero */
+.hero{overflow:hidden;padding:clamp(40px,7vw,84px) 0 clamp(70px,9vw,110px);background:repeating-radial-gradient(circle at 88% 14%,transparent 0 26px,rgba(42,27,20,.055) 26px 27px),var(--sand)}
+.hero .wrap{display:grid;gap:clamp(36px,5vw,64px);align-items:center}
+@media(min-width:920px){.hero .wrap{grid-template-columns:1.2fr .8fr}}
+.hero .wrap>*{animation:up .7s both}
+.hero .wrap>*:nth-child(2){animation-delay:.12s}
+@keyframes up{from{opacity:0;transform:translateY(16px)}}
+.tag{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border:2px solid var(--ink);border-radius:999px;background:var(--paper);font:700 12px var(--B);letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.tag::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--moss)}
+.hero h1{font-size:clamp(2.9rem,8vw,6rem);margin-top:22px;line-height:.95}
+.hero h1 em{font-style:italic;font-weight:700;color:var(--clay);background:linear-gradient(transparent 62%,var(--saffron) 62% 92%,transparent 92%)}
+.lead{font-size:clamp(1.05rem,1.4vw,1.2rem);max-width:46ch;margin-top:22px}
+.row{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
+.collage{position:relative;aspect-ratio:1/1.05;max-width:440px;margin-inline:auto;width:100%}
+.c-arch{position:absolute;inset:6% 18% 0 0;background:var(--clay);border:2px solid var(--ink);border-radius:999px 999px 18px 18px;box-shadow:var(--hard)}
+.c-sun{position:absolute;right:2%;top:2%;width:42%;aspect-ratio:1;border-radius:50%;background:var(--saffron);border:2px solid var(--ink)}
+.c-leaf{position:absolute;right:6%;bottom:14%;width:26%;aspect-ratio:1;background:var(--moss);border:2px solid var(--ink);border-radius:0 100% 0 100%}
+.c-card{position:absolute;left:8%;bottom:4%;width:62%;padding:16px 18px;background:var(--paper);border:2px solid var(--ink);border-radius:var(--r);box-shadow:var(--hard);transform:rotate(-3deg)}
+.c-card small{font:700 11px var(--B);letter-spacing:.12em;text-transform:uppercase;color:var(--clay)}
+.c-card b{display:block;font:800 40px/1 var(--D);color:var(--ink);margin:4px 0}
+.c-card span{font-size:13px}
+
+/* pita berjalan */
+.tick{background:var(--ink);color:var(--saffron);border-block:2px solid var(--ink);overflow:hidden;white-space:nowrap}
+.tick div{display:inline-flex;padding:14px 0;animation:tick 30s linear infinite;font:700 clamp(18px,2.4vw,26px) var(--D)}
+.tick span{padding-right:36px}
+.tick span::after{content:"✺";margin-left:36px;color:var(--clay)}
+@keyframes tick{to{transform:translateX(-50%)}}
+
+/* statistik */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;border:2px solid var(--ink);border-radius:var(--r);background:var(--ink);overflow:hidden;box-shadow:var(--hard);margin-top:-44px;position:relative}
+@media(min-width:760px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stats div{background:var(--paper);padding:20px 22px}
+.stats b{display:block;font:800 clamp(2rem,4vw,2.8rem)/1 var(--D);color:var(--ink)}
+.stats span{font:700 12px var(--B);letter-spacing:.1em;text-transform:uppercase}
+
+/* section */
+.sec{padding:clamp(60px,8vw,108px) 0}
+.kicker{font:700 13px var(--B);letter-spacing:.14em;text-transform:uppercase;color:var(--clay)}
+.sec h2{font-size:clamp(2.1rem,4.6vw,3.6rem);margin-top:12px;max-width:18ch}
+.sub{max-width:54ch;margin-top:16px}
+
+/* kartu bento */
+.bento{display:grid;gap:18px;margin-top:40px;grid-template-columns:1fr}
+@media(min-width:700px){.bento{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1000px){.bento{grid-template-columns:repeat(6,1fr)}.k:nth-child(-n+2){grid-column:span 3}.k:nth-child(n+3){grid-column:span 2}}
+.k{display:flex;flex-direction:column;gap:10px;min-height:250px;padding:24px;border:2px solid var(--ink);border-radius:var(--r);background:var(--paper);box-shadow:var(--hard);text-decoration:none;transition:transform .15s,box-shadow .15s}
+.k:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+.k .n{font:800 56px/1 var(--D);color:var(--ink)}
+.k h3{font-size:1.7rem}
+.k--clay{background:var(--clay);color:#ffe9dc}.k--clay h3,.k--clay .n{color:#fff}
+.k--saf{background:var(--saffron);color:var(--ink)}
+.k--moss{background:var(--moss);color:#e8f0df}.k--moss h3,.k--moss .n{color:#fff}
+.meta{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:10px;font:700 12px var(--B);letter-spacing:.06em;text-transform:uppercase;color:inherit}
+.pill{padding:4px 10px;border:2px solid currentColor;border-radius:999px;font-size:11px}
+.k--ink{opacity:.7}.k--ink h3,.k--ink .n{text-decoration:line-through;text-decoration-thickness:2px}
+
+/* langkah */
+.steps{display:grid;gap:18px;margin-top:40px;counter-reset:s}
+@media(min-width:800px){.steps{grid-template-columns:repeat(3,1fr)}}
+.step{padding:26px;border:2px dashed var(--ink);border-radius:var(--r)}
+.step::before{counter-increment:s;content:"0" counter(s);font:800 64px/1 var(--D);color:var(--clay)}
+.step small{display:block;margin-top:10px;font:700 12px var(--B);letter-spacing:.12em;text-transform:uppercase;color:var(--moss)}
+.step h3{font-size:1.5rem;margin-top:6px}
+.step p{margin-top:8px}
+
+/* alur (gelap) */
+.dark{background:var(--ink);color:#d9c9b8}
+.dark h2{color:var(--paper)}.dark .kicker{color:var(--saffron)}
+.flow{list-style:none;margin:40px 0 0;padding:0;border-top:1px solid rgba(255,255,255,.2)}
+.flow li{display:grid;grid-template-columns:auto 1fr;gap:6px 20px;padding:22px 0;border-bottom:1px solid rgba(255,255,255,.2);align-items:baseline}
+.flow b{font:800 34px var(--D);color:var(--saffron)}
+.flow h3{color:var(--paper);font-size:1.5rem}
+.flow p{grid-column:1/-1}
+@media(min-width:800px){.flow li{grid-template-columns:90px 1fr 1.4fr}.flow p{grid-column:auto}}
+
+/* faq */
+.faq{margin-top:36px;display:grid;gap:12px;max-width:860px}
+.faq details{border:2px solid var(--ink);border-radius:var(--r);background:var(--paper)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:16px;padding:18px 22px;font:700 1.1rem var(--D);color:var(--ink)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font:700 26px/1 var(--B);color:var(--clay);transition:transform .2s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq p{padding:0 22px 20px}
+
+/* cta */
+.cta{position:relative;overflow:hidden;padding:clamp(32px,6vw,72px);border:2px solid var(--ink);border-radius:24px;background:var(--clay);color:#ffe9dc;box-shadow:8px 8px 0 var(--ink)}
+.cta::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;background:var(--saffron);border:2px solid var(--ink)}
+.cta>*{position:relative;z-index:1}
+.cta h2{color:#fff;font-size:clamp(2.2rem,5vw,4rem);max-width:14ch}
+.cta p{margin-top:14px;max-width:44ch}
+
+/* footer */
+footer{background:var(--ink);color:#bfae9c;padding:56px 0 24px;overflow:hidden;font-size:15px}
+.foot{display:flex;flex-wrap:wrap;gap:24px 56px;justify-content:space-between}
+footer h3{color:var(--paper);font:700 13px var(--B);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}
+footer ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+footer a{color:#e9dccb;text-decoration:none}footer a:hover{color:var(--saffron)}
+.big{font:800 clamp(4rem,19vw,15rem)/.8 var(--D);color:transparent;-webkit-text-stroke:2px rgba(246,237,223,.35);letter-spacing:-.04em;margin-top:44px}
+.copy{margin-top:20px;font-size:13px;opacity:.7}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-999px">Lewati ke konten</a>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="logo" href="#top"><i aria-hidden="true"></i>bumifest</a>
+    <button class="burger" id="burger" aria-expanded="false" aria-controls="nav" aria-label="Buka menu">☰</button>
+    <nav class="nav" id="nav" aria-label="Navigasi utama">
+      <a href="#lomba">Cabang lomba</a><a href="#jadwal">Jadwal</a><a href="#alur">Alur</a><a href="#faq">FAQ</a><a href="#">Masuk</a>
+      <a class="btn btn--clay btn--sm" href="#daftar">Daftar →</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <span class="tag">Pendaftaran dibuka</span>
+      <h1>Berakar di bumi, <em>bertanding</em> sampai langit.</h1>
+      <p class="lead">Festival perlombaan tempat bakat bertemu panggung. Daftar, bertanding, dan pantau hasilnya dalam satu tempat.</p>
+      <div class="row">
+        <a class="btn" href="#daftar">Daftar sekarang →</a>
+        <a class="btn btn--ghost" href="#lomba">Lihat cabang lomba</a>
+      </div>
+    </div>
+    <div class="collage" aria-hidden="true">
+      <div class="c-arch"></div><div class="c-sun"></div><div class="c-leaf"></div>
+      <div class="c-card"><small>Tiket peserta</small><b>BUMI 27</b><span>[Tanggal] · [Lokasi]</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="tick" aria-hidden="true"><div>
+  <span>Cerdas Cermat</span><span>Pidato</span><span>Desain Poster</span><span>Fotografi</span><span>Musik Akustik</span>
+  <span>Cerdas Cermat</span><span>Pidato</span><span>Desain Poster</span><span>Fotografi</span><span>Musik Akustik</span>
+</div></div>
+
+<div class="wrap">
+  <div class="stats">
+    <div><b>5</b><span>Cabang lomba</span></div>
+    <div><b>500+</b><span>Peserta (contoh)</span></div>
+    <div><b>1 hari</b><span>Puncak acara</span></div>
+    <div><b>Gratis</b><span>Biaya daftar</span></div>
+  </div>
+</div>
+
+<section class="sec" id="lomba">
+  <div class="wrap">
+    <span class="kicker">Cabang lomba</span>
+    <h2>Pilih medan kompetisimu.</h2>
+    <p class="sub">Lima cabang contoh. Ketentuan lengkap tiap cabang ada di halaman detail.</p>
+    <div class="bento">
+      <a class="k k--clay" href="#"><span class="n">01</span><h3>Cerdas Cermat</h3><p>Adu cepat dan tepat menjawab soal lintas bidang.</p><div class="meta"><span>Tim · 3 orang</span><span class="pill">14 slot</span></div></a>
+      <a class="k k--saf" href="#"><span class="n">02</span><h3>Pidato</h3><p>Sampaikan gagasan yang runtut dan menggugah.</p><div class="meta"><span>Individu</span><span class="pill">8 slot</span></div></a>
+      <a class="k" href="#"><span class="n">03</span><h3>Desain Poster</h3><p>Visualkan tema festival jadi poster yang kuat.</p><div class="meta"><span>Individu</span><span class="pill">31 slot</span></div></a>
+      <a class="k k--moss" href="#"><span class="n">04</span><h3>Fotografi</h3><p>Tangkap cerita dalam satu bingkai.</p><div class="meta"><span>Individu</span><span class="pill">3 slot</span></div></a>
+      <a class="k k--ink" href="#"><span class="n">05</span><h3>Musik Akustik</h3><p>Tampilkan aransemen terbaik di panggung utama.</p><div class="meta"><span>Tim · 2–4 orang</span><span class="pill">Penuh</span></div></a>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="jadwal" style="padding-top:0">
+  <div class="wrap">
+    <span class="kicker">Jadwal</span>
+    <h2>Tiga tanggal yang perlu dicatat.</h2>
+    <div class="steps">
+      <div class="step"><small>Pendaftaran online</small><h3>[Tanggal buka–tutup]</h3><p>Daftar lewat akun peserta, lalu tunggu persetujuan panitia.</p></div>
+      <div class="step"><small>Technical meeting</small><h3>[Tanggal]</h3><p>Pertemuan teknis untuk peserta dan pendamping.</p></div>
+      <div class="step"><small>Hari pelaksanaan</small><h3>[Tanggal]</h3><p>Semua cabang lomba berlangsung di lokasi acara.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec dark" id="alur">
+  <div class="wrap">
+    <span class="kicker">Alur pendaftaran</span>
+    <h2>Dari akun sampai piagam.</h2>
+    <ol class="flow">
+      <li><b>01</b><h3>Buat akun</h3><p>Daftar dengan email dan lengkapi profil peserta.</p></li>
+      <li><b>02</b><h3>Pilih cabang</h3><p>Pilih lomba, isi data peserta atau tim sebelum kuota penuh.</p></li>
+      <li><b>03</b><h3>Verifikasi</h3><p>Panitia memeriksa berkas dan menyetujui pendaftaran.</p></li>
+      <li><b>04</b><h3>Bertanding</h3><p>Ikuti lomba, lihat nilai dan peringkat, unduh sertifikat.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <span class="kicker">Pertanyaan umum</span>
+    <h2>Sebelum kamu mendaftar.</h2>
+    <div class="faq">
+      <details open><summary>Siapa yang boleh ikut Bumifest?</summary><p>Isi sesuai ketentuan peserta dari panitia. Teks ini hanya contoh.</p></details>
+      <details><summary>Apakah ada biaya pendaftaran?</summary><p>Isi sesuai kebijakan panitia (gratis atau berbayar).</p></details>
+      <details><summary>Bagaimana tahu pendaftaran saya disetujui?</summary><p>Status tampil di dashboard peserta: menunggu, disetujui, atau ditolak beserta alasannya.</p></details>
+      <details><summary>Kapan hasil lomba diumumkan?</summary><p>Hasil tampil di halaman Hasil setelah panitia mempublikasikannya.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="daftar" style="padding-top:0">
+  <div class="wrap">
+    <div class="cta">
+      <h2>Siap ikut Bumifest?</h2>
+      <p>Buat akun, pilih cabang, dan tunggu konfirmasi panitia.</p>
+      <div class="row"><a class="btn" href="#">Buat akun peserta →</a><a class="btn btn--ghost" href="#lomba">Tanya cabang dulu</a></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div><a class="logo" href="#top" style="color:var(--paper)"><i aria-hidden="true"></i>bumifest</a><p style="margin-top:12px;max-width:34ch">Aplikasi web perlombaan: pendaftaran, penilaian, dan pengumuman hasil dalam satu tempat.</p></div>
+      <div><h3>Jelajahi</h3><ul><li><a href="#lomba">Cabang lomba</a></li><li><a href="#jadwal">Jadwal</a></li><li><a href="#faq">FAQ</a></li></ul></div>
+      <div><h3>Peserta</h3><ul><li><a href="#">Masuk</a></li><li><a href="#daftar">Buat akun</a></li><li><a href="#alur">Alur pendaftaran</a></li></ul></div>
+    </div>
+    <div class="big" aria-hidden="true">bumifest</div>
+    <p class="copy">© 2027 Bumifest · Pratinjau desain, data hanya contoh.</p>
+  </div>
+</footer>
+
+<script>
+var b=document.getElementById('burger'),n=document.getElementById('nav');
+b.addEventListener('click',function(){var o=n.classList.toggle('open');b.setAttribute('aria-expanded',o);b.textContent=o?'✕':'☰'});
+n.addEventListener('click',function(e){if(e.target.closest('a')){n.classList.remove('open');b.setAttribute('aria-expanded',false);b.textContent='☰'}});
+</script>
+</body>
+</html>

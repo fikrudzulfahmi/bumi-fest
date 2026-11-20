@@ -8,6 +8,7 @@ use App\Actions\Registration\SubmitRegistration;
 use App\Actions\Registration\SwapRegistrationMember;
 use App\Actions\Registration\UploadRegistrationDocument;
 use App\Enums\DocumentType;
+use App\Enums\Level;
 use App\Enums\RegistrationStatus;
 use App\Exceptions\BusinessRuleViolation;
 use App\Models\Competition;
@@ -184,6 +185,7 @@ class RegistrationController extends Controller
                 'team_name' => $r->team_name,
                 'competition_name' => $r->competition->name,
                 'level' => $r->competition->level,
+                'level_label' => Level::tryFrom((string) $r->competition->level)?->label() ?? $r->competition->level,
                 'slug' => $r->competition->slug,
             ]);
 

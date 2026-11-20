@@ -1,5 +1,7 @@
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, Award, CalendarDays, Info, School } from 'lucide-react';
 
 interface Winner {
     id: number;
@@ -18,78 +20,129 @@ interface Props {
 
 const medal = (placement: number) => (placement === 1 ? 'Juara 1' : placement === 2 ? 'Juara 2' : 'Juara 3');
 
+function tanggal(value: string | null): string {
+    if (!value) {
+        return '—';
+    }
+
+    return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 export default function Results({ level, competition, winners }: Props) {
     return (
-        <AuthenticatedLayout
-            header={
-                <div>
-                    <h1 className="text-2xl font-bold">Hasil Lomba</h1>
-                    <p className="text-sm text-gray-500">
-                        {competition.name} — jenjang {level.label}
-                    </p>
-                </div>
-            }
-        >
+        <AuthenticatedLayout header={<h1>Hasil {competition.name}</h1>}>
             <Head title={`Hasil ${competition.name}`} />
 
-            <div className="mx-auto max-w-3xl space-y-4 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm text-gray-600">
-                        Hasil resmi sudah diterbitkan panitia. Sertifikat dikirim ke email pemilik entri.
-                    </p>
-                    <Link
-                        href={route('portal.level', level.slug)}
-                        className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
-                    >
-                        Kembali ke portal
-                    </Link>
-                </div>
+            <FlashMessage />
+
+            <div className="stack">
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Pengumuman resmi</span>
+                            <h2>{competition.name}</h2>
+                            <p className="muted">
+                                Jenjang {level.label} · diterbitkan {tanggal(competition.results_published_at)}
+                            </p>
+                        </div>
+                        <Link className="btn btn--ghost btn--sm" href={route('portal.level', level.slug)}>
+                            <ArrowLeft size={16} aria-hidden />
+                            Kembali ke portal
+                        </Link>
+                    </div>
+
+                    <div className="stat-grid">
+                        <div className="stat">
+                            <b>{winners.length}</b>
+                            <span>Penerima juara</span>
+                        </div>
+                        <div className="stat">
+                            <b style={{ fontSize: '1.3rem' }}>{level.label}</b>
+                            <span>Jenjang lomba</span>
+                        </div>
+                        <div className="stat">
+                            <b style={{ fontSize: '1.3rem' }}>
+                                <CalendarDays size={16} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
+                                {tanggal(competition.results_published_at)}
+                            </b>
+                            <span>Tanggal terbit</span>
+                        </div>
+                    </div>
+                </section>
 
                 {winners.length === 0 ? (
-                    <div className="rounded border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
-                        Panitia belum menetapkan juara pada lomba ini.
+                    <div className="panel">
+                        <EmptyState
+                            title="Juara belum ditetapkan"
+                            description="Panitia belum menetapkan juara pada lomba ini. Hasil akan tampil di halaman ini setelah diumumkan."
+                            action={
+                                <Link className="btn btn--sm" href={route('portal.level', level.slug)}>
+                                    Lihat cabang lain
+                                </Link>
+                            }
+                        />
                     </div>
                 ) : (
-                    <ul className="space-y-3">
+                    <div className="stack-sm">
                         {winners.map((winner) => (
-                            <li
+                            <section
                                 key={winner.id}
-                                className={`rounded border bg-white p-4 ${
+                                className="panel"
+                                style={
                                     winner.placement === 1
-                                        ? 'border-amber-300 ring-1 ring-amber-200'
-                                        : 'border-gray-200'
-                                }`}
+                                        ? { borderColor: 'var(--saffron)', boxShadow: '4px 4px 0 var(--saffron)' }
+                                        : undefined
+                                }
                             >
-                                <div className="flex flex-wrap items-start justify-between gap-2">
-                                    <div className="min-w-0">
-                                        <span
-                                            className={`inline-block rounded px-2 py-1 text-xs font-semibold ${
-                                                winner.placement === 1
-                                                    ? 'bg-amber-100 text-amber-900'
-                                                    : 'bg-gray-100 text-gray-700'
-                                            }`}
-                                        >
-                                            {medal(winner.placement)}
-                                        </span>
-                                        <h2 className="mt-2 text-lg font-semibold">
+                                <div className="row-between" style={{ gap: 16, flexWrap: 'wrap' }}>
+                                    <div style={{ minWidth: 0 }}>
+                                        <div className="row-gap" style={{ gap: 8 }}>
+                                            <span
+                                                className={
+                                                    winner.placement === 1
+                                                        ? 'badge badge--ok'
+                                                        : 'badge badge--neutral'
+                                                }
+                                            >
+                                                <Award size={14} aria-hidden /> {medal(winner.placement)}
+                                            </span>
+                                            <span className="tnum small muted">{winner.code}</span>
+                                        </div>
+
+                                        <h3 style={{ marginTop: 10 }}>
                                             {winner.team_name ?? (winner.names.join(', ') || 'Tanpa nama')}
-                                        </h2>
+                                        </h3>
+
                                         {winner.team_name && winner.names.length > 0 && (
-                                            <p className="text-sm text-gray-600">{winner.names.join(', ')}</p>
+                                            <p className="small muted" style={{ marginTop: 4 }}>
+                                                {winner.names.join(', ')}
+                                            </p>
                                         )}
+
                                         {winner.school_name && (
-                                            <p className="text-xs text-gray-500">{winner.school_name}</p>
+                                            <p className="small muted" style={{ marginTop: 4 }}>
+                                                <School size={13} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
+                                                {winner.school_name}
+                                            </p>
                                         )}
                                     </div>
-                                    <span className="font-mono text-xs text-gray-400">{winner.code}</span>
+
+                                    <span
+                                        className="strong"
+                                        style={{ fontFamily: 'var(--D)', fontSize: '1.4rem' }}
+                                        aria-hidden="true"
+                                    >
+                                        #{winner.placement}
+                                    </span>
                                 </div>
-                            </li>
+                            </section>
                         ))}
-                    </ul>
+                    </div>
                 )}
 
-                <p className="text-xs text-gray-500">
-                    Peserta yang tidak masuk juara tetap dapat melihat nilai akhirnya di halaman pendaftaran.
+                <p className="small muted">
+                    <Info size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> Peserta yang tidak masuk juara tetap
+                    dapat melihat nilai akhirnya di halaman pendaftaran masing-masing.
                 </p>
             </div>
         </AuthenticatedLayout>

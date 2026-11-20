@@ -1,5 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
-import { CalendarDays, CheckCircle2, LogIn, Trophy, UserPlus } from 'lucide-react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { ArrowRight, CalendarDays, MapPin, Ticket } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface Competition {
     id: number;
@@ -10,6 +11,9 @@ interface Competition {
     fee: number;
     opens_at: string | null;
     closes_at: string | null;
+    quota: number | null;
+    status: string;
+    slug: string;
 }
 
 interface Props {
@@ -17,170 +21,337 @@ interface Props {
     contact_email: string;
     contact_whatsapp: string;
     competitions: Competition[];
+    stats: { total_competitions: number; total_registrations: number; levels: number };
+    faqs: { q: string; a: string }[];
     can_login: boolean;
 }
 
-function formatDate(value: string | null): string {
+function rupiah(value: number): string {
+    return value === 0
+        ? 'Gratis'
+        : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+}
+
+function tanggal(value: string | null): string {
     if (!value) {
         return '—';
     }
 
-    return new Date(value).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-    });
+    return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function formatRupiah(value: number): string {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        maximumFractionDigits: 0,
-    }).format(value);
-}
+const BENTO = ['k--clay', 'k--saf', '', 'k--moss', ''];
 
-export default function Home({ event_name, competitions, can_login }: Props) {
+export default function Home({ event_name, competitions, stats, faqs, can_login }: Props) {
+    const auth = (usePage().props as { auth?: { user?: { name: string } | null } }).auth;
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        document.body.style.overflow = open ? 'hidden' : '';
+    }, [open]);
+
+    const tickerBase = competitions.length > 0 ? competitions.map((c) => c.name) : ['Bumifest'];
+    // Ulangi sampai cukup lebar agar animasi -50% mulus dan pita tidak kosong.
+    const tickerNames: string[] = [];
+    while (tickerNames.length < 12) {
+        tickerNames.push(...tickerBase);
+    }
+
     return (
         <>
             <Head title={event_name} />
 
-            <div className="flex min-h-screen flex-col bg-gray-50">
-                <header className="border-b border-gray-200 bg-white">
-                    <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-                        <span className="text-lg font-bold text-emerald-700">{event_name}</span>
+            <a href="#main" className="skip-link">
+                Lewati ke konten
+            </a>
 
-                        {can_login && (
-                            <nav className="flex items-center gap-2">
-                                <Link
-                                    href={route('login')}
-                                    className="inline-flex min-h-11 items-center gap-2 rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-                                >
-                                    <LogIn className="h-4 w-4" aria-hidden />
+            <header className="bar">
+                <div className="wrap">
+                    <Link className="logo" href="/">
+                        <i aria-hidden="true" />
+                        bumifest
+                    </Link>
+
+                    <button
+                        className="burger"
+                        aria-expanded={open}
+                        aria-controls="nav"
+                        aria-label="Buka menu"
+                        onClick={() => setOpen((v) => !v)}
+                    >
+                        {open ? '✕' : '☰'}
+                    </button>
+
+                    <nav className={open ? 'nav open' : 'nav'} id="nav" aria-label="Navigasi utama">
+                        <a href="#lomba" onClick={() => setOpen(false)}>
+                            Cabang lomba
+                        </a>
+                        <a href="#jadwal" onClick={() => setOpen(false)}>
+                            Jadwal
+                        </a>
+                        <a href="#alur" onClick={() => setOpen(false)}>
+                            Alur
+                        </a>
+                        <a href="#faq" onClick={() => setOpen(false)}>
+                            FAQ
+                        </a>
+                        {auth?.user ? (
+                            <Link className="btn btn--clay btn--sm" href="/dashboard">
+                                Dasbor
+                            </Link>
+                        ) : (
+                            <>
+                                <Link href={route('login')} onClick={() => setOpen(false)}>
                                     Masuk
                                 </Link>
-                                <Link
-                                    href={route('register')}
-                                    className="inline-flex min-h-11 items-center gap-2 rounded bg-emerald-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-600"
-                                >
-                                    <UserPlus className="h-4 w-4" aria-hidden />
-                                    Daftar Akun
+                                <Link className="btn btn--clay btn--sm" href={route('register')} onClick={() => setOpen(false)}>
+                                    Daftar →
                                 </Link>
-                            </nav>
+                            </>
                         )}
+                    </nav>
+                </div>
+            </header>
+
+            <main id="main">
+                <section className="hero" id="top">
+                    <div className="wrap">
+                        <div>
+                            <span className="tag">Pendaftaran dibuka</span>
+                            <h1>
+                                Berakar di bumi, <em>bertanding</em> sampai langit.
+                            </h1>
+                            <p className="lead">
+                                Festival perlombaan tempat bakat bertemu panggung. Daftar, bertanding, dan pantau hasilnya
+                                dalam satu tempat.
+                            </p>
+                            <div className="row">
+                                <Link className="btn" href={route('register')}>
+                                    Daftar sekarang →
+                                </Link>
+                                <a className="btn btn--ghost" href="#lomba">
+                                    Lihat cabang lomba
+                                </a>
+                            </div>
+                        </div>
+
+                        <div className="collage" aria-hidden="true">
+                            <div className="c-arch" />
+                            <div className="c-sun" />
+                            <div className="c-leaf" />
+                            <div className="c-card">
+                                <small>Tiket peserta</small>
+                                <b>BUMI 27</b>
+                                <span>
+                                    <CalendarDays size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> Jadwal menyusul
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                </header>
+                </section>
 
-                <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
-                    <section className="text-center">
-                        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-                            {event_name}
-                        </h1>
-                        <p className="mx-auto mt-3 max-w-2xl text-base text-gray-600">
-                            Festival lomba untuk jenjang SD/MI dan SMP/MTs. Daftarkan tim sekolah Anda,
-                            unggah persyaratan, dan pantau hasil lomba dalam satu portal.
+                <div className="tick" aria-hidden="true">
+                    <div>
+                        {[...tickerNames, ...tickerNames].map((name, i) => (
+                            <span key={`${name}-${i}`}>{name}</span>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="wrap">
+                    <div className="stats">
+                        <div>
+                            <b>{stats.total_competitions}</b>
+                            <span>Cabang lomba</span>
+                        </div>
+                        <div>
+                            <b>{stats.total_registrations}</b>
+                            <span>Pendaftar</span>
+                        </div>
+                        <div>
+                            <b>{stats.levels}</b>
+                            <span>Jenjang</span>
+                        </div>
+                        <div>
+                            <b>Gratis</b>
+                            <span>Biaya daftar</span>
+                        </div>
+                    </div>
+                </div>
+
+                <section className="sec" id="lomba">
+                    <div className="wrap">
+                        <span className="kicker">Cabang lomba</span>
+                        <h2>Pilih medan kompetisimu.</h2>
+                        <p className="sub">
+                            {competitions.length > 0
+                                ? 'Setiap cabang punya ketentuan sendiri. Buka halaman detail untuk syarat lengkap.'
+                                : 'Cabang lomba akan diumumkan di sini begitu panitia membukanya.'}
                         </p>
-                    </section>
-
-                    <section className="mt-10">
-                        <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-                            <CalendarDays className="h-5 w-5 text-emerald-700" aria-hidden />
-                            Jadwal Lomba
-                        </h2>
 
                         {competitions.length === 0 ? (
-                            <div className="mt-4 rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-                                Belum ada lomba yang dibuka. Silakan cek kembali nanti.
+                            <div className="empty" style={{ marginTop: 40 }}>
+                                <h3>Belum ada cabang dibuka</h3>
+                                <p className="muted">Pantau halaman ini atau hubungi panitia untuk info terbaru.</p>
                             </div>
                         ) : (
-                            <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                    <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-                                        <tr>
-                                            <th className="px-4 py-3">Lomba</th>
-                                            <th className="px-4 py-3">Jenjang</th>
-                                            <th className="px-4 py-3">Biaya</th>
-                                            <th className="px-4 py-3">Dibuka</th>
-                                            <th className="px-4 py-3">Ditutup</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {competitions.map((competition) => (
-                                            <tr key={competition.id}>
-                                                <td className="px-4 py-3">
-                                                    <div className="font-medium text-gray-900">
-                                                        {competition.name}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {competition.category}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3 text-gray-700">
-                                                    {competition.level_label ?? competition.level}
-                                                </td>
-                                                <td className="px-4 py-3 text-gray-700">
-                                                    {competition.fee === 0
-                                                        ? 'Gratis'
-                                                        : formatRupiah(competition.fee)}
-                                                </td>
-                                                <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                                                    {formatDate(competition.opens_at)}
-                                                </td>
-                                                <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                                                    {formatDate(competition.closes_at)}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="bento">
+                                {competitions.slice(0, 5).map((c, i) => {
+                                    const full = c.status === 'Kuota penuh';
+                                    const cls = full ? 'k k--ink' : `k ${BENTO[i] ?? ''}`.trim();
+
+                                    return (
+                                        <Link key={c.id} className={cls} href="/portal">
+                                            <span className="n">{String(i + 1).padStart(2, '0')}</span>
+                                            <h3>{c.name}</h3>
+                                            <p>{c.category}</p>
+                                            <div className="meta">
+                                                <span>{c.level_label ?? c.level}</span>
+                                                <span className="pill">{full ? 'Penuh' : rupiah(c.fee)}</span>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
                             </div>
                         )}
-                    </section>
-
-                    <section className="mt-10 grid gap-4 sm:grid-cols-3">
-                        {[
-                            {
-                                icon: UserPlus,
-                                title: '1. Buat akun',
-                                body: 'Daftar sebagai peserta atau lembaga sekolah.',
-                            },
-                            {
-                                icon: CalendarDays,
-                                title: '2. Daftarkan tim',
-                                body: 'Lengkapi data siswa, dokumen, dan syarat lomba.',
-                            },
-                            {
-                                icon: Trophy,
-                                title: '3. Pantau hasil',
-                                body: 'Lihat juara dan unduh sertifikat setelah hasil terbit.',
-                            },
-                        ].map((step) => {
-                            const Icon = step.icon;
-
-                            return (
-                                <div
-                                    key={step.title}
-                                    className="rounded-lg border border-gray-200 bg-white p-5"
-                                >
-                                    <Icon className="h-6 w-6 text-emerald-700" aria-hidden />
-                                    <h3 className="mt-3 font-semibold text-gray-900">{step.title}</h3>
-                                    <p className="mt-1 text-sm text-gray-600">{step.body}</p>
-                                </div>
-                            );
-                        })}
-                    </section>
-                </main>
-
-                <footer className="border-t border-gray-200 bg-white py-6">
-                    <div className="mx-auto flex max-w-6xl flex-col items-center gap-1 px-4 text-center text-xs text-gray-500 sm:px-6 lg:px-8">
-                        <p className="flex items-center gap-1">
-                            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-                            {event_name} — portal pendaftaran resmi
-                        </p>
-                        <p>by Bumi Production</p>
                     </div>
-                </footer>
-            </div>
+                </section>
+
+                <section className="sec" id="jadwal" style={{ paddingTop: 0 }}>
+                    <div className="wrap">
+                        <span className="kicker">Jadwal</span>
+                        <h2>Tiga tanggal yang perlu dicatat.</h2>
+                        <div className="steps">
+                            {competitions.slice(0, 3).map((c) => (
+                                <div className="step" key={c.id}>
+                                    <small>{c.level_label ?? 'Pendaftaran'}</small>
+                                    <h3>{c.name}</h3>
+                                    <p>
+                                        Buka {tanggal(c.opens_at)} · Tutup {tanggal(c.closes_at)}
+                                    </p>
+                                </div>
+                            ))}
+                            {competitions.length === 0 && (
+                                <div className="step">
+                                    <small>Pendaftaran online</small>
+                                    <h3>Segera diumumkan</h3>
+                                    <p>Jadwal buka–tutup pendaftaran akan tampil di sini.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </section>
+
+                <section className="sec dark" id="alur">
+                    <div className="wrap">
+                        <span className="kicker">Alur pendaftaran</span>
+                        <h2>Dari akun sampai piagam.</h2>
+                        <ol className="flow">
+                            <li>
+                                <b>01</b>
+                                <h3>Buat akun</h3>
+                                <p>Daftar dengan email dan lengkapi profil peserta.</p>
+                            </li>
+                            <li>
+                                <b>02</b>
+                                <h3>Pilih cabang</h3>
+                                <p>Pilih lomba, isi data peserta atau tim sebelum kuota penuh.</p>
+                            </li>
+                            <li>
+                                <b>03</b>
+                                <h3>Verifikasi</h3>
+                                <p>Panitia memeriksa berkas dan menyetujui pendaftaran.</p>
+                            </li>
+                            <li>
+                                <b>04</b>
+                                <h3>Bertanding</h3>
+                                <p>Ikuti lomba, lihat nilai dan peringkat, unduh sertifikat.</p>
+                            </li>
+                        </ol>
+                    </div>
+                </section>
+
+                <section className="sec" id="faq">
+                    <div className="wrap">
+                        <span className="kicker">Pertanyaan umum</span>
+                        <h2>Sebelum kamu mendaftar.</h2>
+                        <div className="faq">
+                            {faqs.map((f, i) => (
+                                <details key={f.q} open={i === 0}>
+                                    <summary>{f.q}</summary>
+                                    <p>{f.a}</p>
+                                </details>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                <section className="sec" id="daftar" style={{ paddingTop: 0 }}>
+                    <div className="wrap">
+                        <div className="cta">
+                            <h2>Siap ikut Bumifest?</h2>
+                            <p>Buat akun, pilih cabang, dan tunggu konfirmasi panitia.</p>
+                            <div className="row">
+                                <Link className="btn" href={can_login ? route('register') : '/dashboard'}>
+                                    Buat akun peserta →
+                                </Link>
+                                <a className="btn btn--ghost" href="#lomba">
+                                    Tanya cabang dulu
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <footer>
+                <div className="wrap">
+                    <div className="foot">
+                        <div>
+                            <Link className="logo" href="/" style={{ color: 'var(--paper)' }}>
+                                <i aria-hidden="true" />
+                                bumifest
+                            </Link>
+                            <p style={{ marginTop: 12, maxWidth: '34ch' }}>
+                                Aplikasi web perlombaan: pendaftaran, penilaian, dan pengumuman hasil dalam satu tempat.
+                            </p>
+                        </div>
+                        <div>
+                            <h3>Jelajahi</h3>
+                            <ul>
+                                <li>
+                                    <a href="#lomba">Cabang lomba</a>
+                                </li>
+                                <li>
+                                    <a href="#jadwal">Jadwal</a>
+                                </li>
+                                <li>
+                                    <a href="#faq">FAQ</a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3>Peserta</h3>
+                            <ul>
+                                <li>
+                                    <Link href={route('login')}>Masuk</Link>
+                                </li>
+                                <li>
+                                    <Link href={route('register')}>Buat akun</Link>
+                                </li>
+                                <li>
+                                    <a href="#alur">Alur pendaftaran</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="big" aria-hidden="true">
+                        bumifest
+                    </div>
+                    <p className="copy">© 2027 {event_name} · by Bumi Production</p>
+                </div>
+            </footer>
         </>
     );
 }

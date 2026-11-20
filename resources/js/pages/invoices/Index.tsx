@@ -1,6 +1,9 @@
-import { Head, Link } from '@inertiajs/react';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatRupiah, formatTanggalWaktu } from '@/lib/format';
+import { Head, Link } from '@inertiajs/react';
+import { Paperclip, Receipt, Trophy } from 'lucide-react';
 
 interface Invoice {
     id: number;
@@ -19,53 +22,123 @@ interface Props {
     invoices: Invoice[];
 }
 
-const badge: Record<string, string> = {
-    red: 'bg-red-50 text-red-700 ring-red-200',
-    blue: 'bg-blue-50 text-blue-700 ring-blue-200',
-    orange: 'bg-orange-50 text-orange-700 ring-orange-200',
-    green: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-    gray: 'bg-gray-100 text-gray-600 ring-gray-200',
-    slate: 'bg-slate-100 text-slate-600 ring-slate-200',
-};
-
 export default function Index({ invoices }: Props) {
+    const unpaid = invoices.filter((invoice) => invoice.status === 'unpaid').length;
+
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Tagihan Saya</h1>}>
+        <AuthenticatedLayout header={<h1>Tagihan Saya</h1>}>
             <Head title="Tagihan Saya" />
 
-            <div className="mx-auto max-w-5xl space-y-3 p-4">
-                {invoices.length === 0 && <p className="text-gray-500">Belum ada tagihan.</p>}
+            <FlashMessage />
 
-                {invoices.map((invoice) => (
-                    <Link
-                        key={invoice.id}
-                        href={route('invoices.show', invoice.id)}
-                        className="block rounded border border-gray-200 p-4 transition hover:border-gray-300 hover:bg-gray-50"
-                    >
-                        <div className="flex flex-wrap items-center gap-3">
-                            <span className="font-mono text-sm font-medium">{invoice.number}</span>
-                            <span
-                                className={`rounded px-2 py-0.5 text-xs ring-1 ${
-                                    badge[invoice.status_color] ?? badge.gray
-                                }`}
-                            >
-                                {invoice.status_label}
-                            </span>
-                            {invoice.has_proof && (
-                                <span className="text-xs text-gray-500">Bukti terunggah</span>
-                            )}
-                            <span className="ml-auto font-semibold">{formatRupiah(invoice.total)}</span>
+            <div className="stack">
+                <div className="stat-grid">
+                    <div className="stat">
+                        <b>{invoices.length}</b>
+                        <span>Total tagihan</span>
+                    </div>
+                    <div className="stat">
+                        <b>{unpaid}</b>
+                        <span>Belum dibayar</span>
+                        <small>unggah bukti setelah transfer</small>
+                    </div>
+                    <div className="stat">
+                        <b style={{ fontSize: '1.5rem' }}>
+                            {formatRupiah(invoices.reduce((sum, invoice) => sum + invoice.total, 0))}
+                        </b>
+                        <span>Nilai keseluruhan</span>
+                    </div>
+                </div>
+
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Pembayaran</span>
+                            <h2>Daftar tagihan</h2>
+                            <p className="muted">
+                                Transfer sesuai total, lalu unggah bukti pada halaman detail agar panitia memverifikasi.
+                            </p>
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-600">
-                            <span>{invoice.registrations_count ?? 0} entri</span>
-                            {invoice.due_at && (
-                                <span className={invoice.is_overdue ? 'font-medium text-red-600' : ''}>
-                                    Jatuh tempo {formatTanggalWaktu(invoice.due_at)}
-                                </span>
-                            )}
+                        <Link className="btn btn--ghost btn--sm" href={route('registrations.index')}>
+                            <Trophy size={16} aria-hidden />
+                            Lihat pendaftaran
+                        </Link>
+                    </div>
+
+                    {invoices.length === 0 ? (
+                        <EmptyState
+                            title="Belum ada tagihan"
+                            description="Tagihan terbit otomatis setelah Anda mengirim pendaftaran lomba."
+                            action={
+                                <Link className="btn btn--sm" href={route('portal.index')}>
+                                    Cari cabang lomba
+                                </Link>
+                            }
+                        />
+                    ) : (
+                        <div className="table-wrap">
+                            <table className="data">
+                                <thead>
+                                    <tr>
+                                        <th>Nomor</th>
+                                        <th>Entri</th>
+                                        <th>Jatuh tempo</th>
+                                        <th>Status</th>
+                                        <th>Total</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {invoices.map((invoice) => (
+                                        <tr key={invoice.id}>
+                                            <td data-label="Nomor">
+                                                <span className="tnum strong">{invoice.number}</span>
+                                                {invoice.has_proof && (
+                                                    <span className="small muted" style={{ display: 'block' }}>
+                                                        <Paperclip size={12} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
+                                                        Bukti terunggah
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td data-label="Entri" className="num nowrap">
+                                                {invoice.registrations_count ?? 0} entri
+                                            </td>
+                                            <td data-label="Jatuh tempo" className="nowrap">
+                                                {invoice.due_at ? (
+                                                    <span className={invoice.is_overdue ? 'small strong' : 'small'}>
+                                                        {formatTanggalWaktu(invoice.due_at)}
+                                                        {invoice.is_overdue && (
+                                                            <span className="badge badge--bad" style={{ marginLeft: 8 }}>
+                                                                Lewat
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                ) : (
+                                                    <span className="muted">—</span>
+                                                )}
+                                            </td>
+                                            <td data-label="Status">
+                                                <StatusBadge value={invoice.status} label={invoice.status_label} />
+                                            </td>
+                                            <td data-label="Total" className="num nowrap strong">
+                                                {formatRupiah(invoice.total)}
+                                            </td>
+                                            <td data-label="Aksi">
+                                                <Link
+                                                    className="btn btn--clay btn--sm"
+                                                    href={route('invoices.show', invoice.id)}
+                                                >
+                                                    <Receipt size={16} aria-hidden />
+                                                    Buka
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-                    </Link>
-                ))}
+                    )}
+                </section>
             </div>
         </AuthenticatedLayout>
     );

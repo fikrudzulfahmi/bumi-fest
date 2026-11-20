@@ -44,3 +44,11 @@
 
 ---
 **Durasi Setup F00:** ~60 menit (dependency download 11 menit, setup+pint+phpstan 15 menit, rest coding).
+
+## Desain "Bumi Clay" (BLUEPRINT-DESIGN-BUMIFEST)
+- resources/css/bumifest.css: token + komponen (panel, tabel, badge, modal, toast, paginasi, sidebar, form).
+- Font Fraunces + DM Sans di app.blade.php. GuestLayout dan AuthenticatedLayout (sidebar) baru.
+- Semua halaman ditulis ulang (publik, auth, peserta, panitia, juri, profil, verifikasi).
+- Beranda / kini HomeController + public/Home.tsx (sebelumnya halaman default Laravel).
+- Komponen bersama: components/app/{Field,StatusBadge,Modal,ConfirmDialog,FlashMessage,Pagination}.
+- Label jenjang memakai level_label (SD/MI) di seluruh resource dan halaman.

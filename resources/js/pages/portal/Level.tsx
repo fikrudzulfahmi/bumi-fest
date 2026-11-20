@@ -1,179 +1,191 @@
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { formatRupiah } from '@/lib/format';
 import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, CalendarDays, Megaphone, Ticket, Trophy, Users } from 'lucide-react';
 
 interface Competition {
-  id: number;
-  name: string;
-  slug: string;
-  category: string;
-  fee: number;
-  opens_at: string;
-  closes_at: string;
-  quota: number | null;
-  status: string;
-  results_published_at: string | null;
+    id: number;
+    name: string;
+    slug: string;
+    category: string;
+    fee: number;
+    opens_at: string;
+    closes_at: string;
+    quota: number | null;
+    status: string;
+    results_published_at: string | null;
 }
 
 interface Announcement {
-  id: number;
-  title: string;
-  body: string;
-  published_at: string;
+    id: number;
+    title: string;
+    body: string;
+    published_at: string;
 }
 
 interface Level {
-  slug: string;
-  label: string;
+    slug: string;
+    label: string;
 }
 
 interface Props {
-  level: Level;
-  competitions: Competition[];
-  announcements: Announcement[];
+    level: Level;
+    competitions: Competition[];
+    announcements: Announcement[];
 }
 
+function tanggal(value: string | null): string {
+    if (!value) {
+        return '—';
+    }
+
+    return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+const BENTO = ['k--clay', 'k--saf', '', 'k--moss', ''];
+
 export default function Level({ level, competitions, announcements }: Props) {
-  const statusColors = {
-    'Dibuka': 'bg-green-100 text-green-800',
-    'Segera dibuka': 'bg-blue-100 text-blue-800',
-    'Ditutup': 'bg-gray-100 text-gray-800',
-    'Kuota penuh': 'bg-red-100 text-red-800',
-  };
+    const terbuka = competitions.filter((competition) => competition.status === 'Dibuka').length;
 
-  return (
-    <AuthenticatedLayout
-      header={
-        <h2 className="text-xl font-semibold leading-tight text-gray-800">
-          Portal {level.label}
-        </h2>
-      }
-    >
-      <Head title={`Portal ${level.label}`} />
+    return (
+        <AuthenticatedLayout header={<h1>Portal {level.label}</h1>}>
+            <Head title={`Portal ${level.label}`} />
 
-      <div className="py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Grid: Competitions & Announcements */}
-          <div className="grid gap-8 lg:grid-cols-3">
-            {/* Competitions */}
-            <div className="lg:col-span-2">
-              <h3 className="mb-6 text-2xl font-bold text-gray-900">
-                Lomba Tersedia
-              </h3>
-              <div className="space-y-4">
-                {competitions.length > 0 ? (
-                  competitions.map((comp) => (
-                    <div
-                      key={comp.id}
-                      className="overflow-hidden rounded-lg bg-white shadow"
-                    >
-                      <div className="p-6">
-                        <div className="mb-4 flex items-start justify-between">
-                          <div>
-                            <h4 className="text-lg font-semibold text-gray-900">
-                              {comp.name}
-                            </h4>
-                            <p className="mt-1 text-sm text-gray-600">
-                              {comp.category === 'individual'
-                                ? 'Individu'
-                                : 'Tim'}
+            <FlashMessage />
+
+            <div className="stack">
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Jenjang {level.label}</span>
+                            <h2>Cabang lomba tersedia</h2>
+                            <p className="muted">
+                                {competitions.length > 0
+                                    ? `${competitions.length} cabang terdaftar · ${terbuka} sedang dibuka untuk pendaftaran.`
+                                    : 'Panitia belum membuka cabang lomba pada jenjang ini.'}
                             </p>
-                          </div>
-                          <span
-                            className={`rounded-full px-3 py-1 text-sm font-medium ${
-                              statusColors[comp.status as keyof typeof statusColors] ||
-                              'bg-gray-100 text-gray-800'
-                            }`}
-                          >
-                            {comp.status}
-                          </span>
                         </div>
-
-                        <div className="mb-4 space-y-2 text-sm text-gray-600">
-                          <p>
-                            <strong>Biaya:</strong> Rp
-                            {comp.fee.toLocaleString('id-ID')}
-                          </p>
-                          <p>
-                            <strong>Buka:</strong>{' '}
-                            {new Date(comp.opens_at).toLocaleDateString(
-                              'id-ID'
-                            )}
-                          </p>
-                          <p>
-                            <strong>Tutup:</strong>{' '}
-                            {new Date(comp.closes_at).toLocaleDateString(
-                              'id-ID'
-                            )}
-                          </p>
-                          {comp.quota !== null && (
-                            <p>
-                              <strong>Kuota:</strong> {comp.quota}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                          <button className="w-full rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700">
-                            Lihat Detail
-                          </button>
-                          {comp.results_published_at && (
-                            <Link
-                              href={route('portal.results', [
-                                level.slug,
-                                comp.slug,
-                              ])}
-                              className="block w-full rounded border border-emerald-600 px-4 py-2 text-center text-emerald-700 hover:bg-emerald-50"
-                            >
-                              Lihat Hasil
-                            </Link>
-                          )}
-                        </div>
-                      </div>
+                        <Link className="btn btn--ghost btn--sm" href={route('portal.index')}>
+                            <ArrowLeft size={16} aria-hidden />
+                            Pilih jenjang lain
+                        </Link>
                     </div>
-                  ))
-                ) : (
-                  <div className="rounded-lg bg-white p-6 text-center text-gray-600">
-                    Tidak ada lomba pada jenjang ini
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* Announcements */}
-            <div>
-              <h3 className="mb-6 text-2xl font-bold text-gray-900">
-                Pengumuman
-              </h3>
-              <div className="space-y-4">
-                {announcements.length > 0 ? (
-                  announcements.map((ann) => (
-                    <div
-                      key={ann.id}
-                      className="rounded-lg bg-white p-4 shadow"
-                    >
-                      <h4 className="font-semibold text-gray-900">
-                        {ann.title}
-                      </h4>
-                      <p className="mt-2 line-clamp-3 text-sm text-gray-600">
-                        {ann.body}
-                      </p>
-                      <p className="mt-2 text-xs text-gray-400">
-                        {new Date(ann.published_at).toLocaleDateString(
-                          'id-ID'
-                        )}
-                      </p>
+                    {competitions.length === 0 ? (
+                        <EmptyState
+                            title="Belum ada cabang lomba"
+                            description="Cabang lomba jenjang ini akan tampil di sini begitu panitia membukanya."
+                            action={
+                                <Link className="btn btn--sm" href={route('portal.index')}>
+                                    Kembali ke portal
+                                </Link>
+                            }
+                        />
+                    ) : (
+                        <div
+                            style={{
+                                display: 'grid',
+                                gap: 16,
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                                marginTop: 4,
+                            }}
+                        >
+                            {competitions.map((comp, i) => {
+                                const penuh = comp.status === 'Kuota penuh';
+                                const buka = comp.status === 'Dibuka';
+
+                                return (
+                                    <div key={comp.id} className={penuh ? 'k k--ink' : `k ${BENTO[i] ?? ''}`.trim()}>
+                                        <div className="row-between" style={{ alignItems: 'flex-start' }}>
+                                            <span className="n">{String(i + 1).padStart(2, '0')}</span>
+                                            <StatusBadge value={comp.status} />
+                                        </div>
+
+                                        <h3>{comp.name}</h3>
+                                        <p>
+                                            <Users size={13} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
+                                            {comp.category === 'individual' ? 'Individu' : 'Tim'}
+                                            {comp.quota !== null ? ` · kuota ${comp.quota}` : ''}
+                                        </p>
+
+                                        <div className="small" style={{ opacity: 0.9 }}>
+                                            <p style={{ margin: 0 }}>
+                                                <CalendarDays size={13} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
+                                                {tanggal(comp.opens_at)} – {tanggal(comp.closes_at)}
+                                            </p>
+                                        </div>
+
+                                        <div className="meta">
+                                            <span>
+                                                <Ticket size={13} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
+                                                {formatRupiah(comp.fee)}
+                                            </span>
+                                            {comp.results_published_at && <span className="pill">Hasil terbit</span>}
+                                        </div>
+
+                                        <div className="row-gap" style={{ marginTop: 4, gap: 8 }}>
+                                            {buka ? (
+                                                <Link
+                                                    className="btn btn--sm"
+                                                    href={route('registrations.create', [level.slug, comp.slug])}
+                                                >
+                                                    <Trophy size={15} aria-hidden />
+                                                    Daftar sekarang
+                                                </Link>
+                                            ) : (
+                                                <span className="small">{penuh ? 'Kuota sudah penuh' : 'Belum dibuka'}</span>
+                                            )}
+
+                                            {comp.results_published_at && (
+                                                <Link
+                                                    className="btn btn--ghost btn--sm"
+                                                    href={route('portal.results', [level.slug, comp.slug])}
+                                                >
+                                                    Lihat hasil
+                                                </Link>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </section>
+
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Informasi panitia</span>
+                            <h3>
+                                <Megaphone size={18} aria-hidden style={{ verticalAlign: '-3px' }} /> Pengumuman
+                            </h3>
+                            <p className="muted">Kabar terbaru seputar jadwal, teknis, dan hasil lomba.</p>
+                        </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="rounded-lg bg-white p-4 text-center text-sm text-gray-600">
-                    Tidak ada pengumuman
-                  </div>
-                )}
-              </div>
+
+                    {announcements.length === 0 ? (
+                        <p className="small muted">Belum ada pengumuman untuk jenjang ini.</p>
+                    ) : (
+                        <div className="stack-sm">
+                            {announcements.map((ann, i) => (
+                                <div key={ann.id}>
+                                    {i > 0 && <div className="divider" />}
+                                    <h3 style={{ fontSize: '1.1rem' }}>{ann.title}</h3>
+                                    <p className="small muted" style={{ marginTop: 6 }}>
+                                        {ann.body}
+                                    </p>
+                                    <p className="small muted" style={{ marginTop: 8 }}>
+                                        <CalendarDays size={13} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}
+                                        {tanggal(ann.published_at)}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
             </div>
-          </div>
-        </div>
-      </div>
-    </AuthenticatedLayout>
-  );
+        </AuthenticatedLayout>
+    );
 }

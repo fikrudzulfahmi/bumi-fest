@@ -1,17 +1,11 @@
-import { Head, useForm } from '@inertiajs/react';
+import Field from '@/Components/app/Field';
+import FlashMessage from '@/Components/app/FlashMessage';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import InputLabel from '@/Components/InputLabel';
-import InputError from '@/Components/InputError';
+import { Head, useForm } from '@inertiajs/react';
 
 interface Level {
     value: string;
     label: string;
-}
-
-interface Props {
-    levels: Level[];
 }
 
 type FormData = {
@@ -29,7 +23,7 @@ type FormData = {
     submission_mode: string;
 };
 
-export default function Create({ levels }: Props) {
+export default function Create({ levels }: { levels: Level[] }) {
     const { data, setData, post, processing, errors } = useForm<FormData>({
         level: '',
         name: '',
@@ -50,99 +44,141 @@ export default function Create({ levels }: Props) {
         post(route('admin.competitions.store'));
     };
 
-    const text = (key: keyof FormData) => ({
-        value: String(data[key]),
-        onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-            setData(key, e.target.value),
-    });
-
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Buat Lomba Baru</h1>}>
+        <AuthenticatedLayout
+            header={
+                <div>
+                    <span className="kicker">Panitia</span>
+                    <h1>Buat Lomba Baru</h1>
+                </div>
+            }
+        >
             <Head title="Buat Lomba" />
 
-            <div className="max-w-2xl mx-auto p-4">
-                <form onSubmit={submit} className="space-y-4">
-                    <div>
-                        <InputLabel htmlFor="level">Jenjang</InputLabel>
+            <FlashMessage />
+
+            <form onSubmit={submit} className="stack" style={{ maxWidth: 760 }}>
+                <fieldset className="fieldset">
+                    <legend>Identitas lomba</legend>
+
+                    <Field label="Jenjang" htmlFor="level" error={errors.level} required>
                         <select
                             id="level"
-                            {...text('level')}
-                            className="border border-gray-300 rounded px-3 py-2 w-full min-h-[44px]"
+                            className="select"
+                            value={data.level}
+                            onChange={(e) => setData('level', e.target.value)}
+                            aria-invalid={Boolean(errors.level)}
                         >
-                            <option value="">Pilih Jenjang</option>
+                            <option value="">Pilih jenjang</option>
                             {levels.map((level) => (
                                 <option key={level.value} value={level.value}>
                                     {level.label}
                                 </option>
                             ))}
                         </select>
-                        <InputError message={errors.level} className="mt-2" />
-                    </div>
+                    </Field>
 
-                    <div>
-                        <InputLabel htmlFor="name">Nama Lomba</InputLabel>
-                        <TextInput id="name" type="text" className="w-full" {...text('name')} />
-                        <InputError message={errors.name} className="mt-2" />
-                    </div>
+                    <Field label="Nama lomba" htmlFor="name" error={errors.name} required>
+                        <input
+                            id="name"
+                            type="text"
+                            className="input"
+                            value={data.name}
+                            onChange={(e) => setData('name', e.target.value)}
+                            aria-invalid={Boolean(errors.name)}
+                        />
+                    </Field>
 
-                    <div>
-                        <InputLabel htmlFor="slug">Slug</InputLabel>
-                        <TextInput id="slug" type="text" className="w-full" {...text('slug')} />
-                        <InputError message={errors.slug} className="mt-2" />
-                    </div>
+                    <Field label="Slug" htmlFor="slug" error={errors.slug} hint="Dipakai di URL, huruf kecil dan tanda hubung" required>
+                        <input
+                            id="slug"
+                            type="text"
+                            className="input"
+                            value={data.slug}
+                            onChange={(e) => setData('slug', e.target.value)}
+                            aria-invalid={Boolean(errors.slug)}
+                        />
+                    </Field>
 
-                    <div>
-                        <InputLabel htmlFor="description">Deskripsi</InputLabel>
+                    <Field label="Deskripsi" htmlFor="description" error={errors.description}>
                         <textarea
                             id="description"
                             rows={4}
-                            {...text('description')}
-                            className="border border-gray-300 rounded px-3 py-2 w-full"
+                            className="textarea"
+                            value={data.description}
+                            onChange={(e) => setData('description', e.target.value)}
+                            aria-invalid={Boolean(errors.description)}
                         />
-                        <InputError message={errors.description} className="mt-2" />
-                    </div>
+                    </Field>
+                </fieldset>
 
-                    <div>
-                        <InputLabel htmlFor="category">Kategori</InputLabel>
+                <fieldset className="fieldset">
+                    <legend>Ketentuan peserta</legend>
+
+                    <Field label="Kategori" htmlFor="category" error={errors.category} required>
                         <select
                             id="category"
-                            {...text('category')}
-                            className="border border-gray-300 rounded px-3 py-2 w-full min-h-[44px]"
+                            className="select"
+                            value={data.category}
+                            onChange={(e) => setData('category', e.target.value)}
                         >
                             <option value="individual">Individu</option>
                             <option value="team">Tim</option>
                         </select>
-                        <InputError message={errors.category} className="mt-2" />
-                    </div>
+                    </Field>
 
-                    <div>
-                        <InputLabel htmlFor="fee">Biaya Pendaftaran (Rp)</InputLabel>
-                        <TextInput
+                    <Field label="Biaya pendaftaran (Rp)" htmlFor="fee" error={errors.fee} hint="Isi 0 bila gratis">
+                        <input
                             id="fee"
                             type="number"
-                            className="w-full"
+                            className="input"
                             value={data.fee}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setData('fee', Number(e.target.value))}
+                            onChange={(e) => setData('fee', Number(e.target.value))}
+                            aria-invalid={Boolean(errors.fee)}
                         />
-                        <InputError message={errors.fee} className="mt-2" />
-                    </div>
+                    </Field>
+                </fieldset>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <InputLabel htmlFor="opens_at">Dibuka</InputLabel>
-                            <TextInput id="opens_at" type="datetime-local" className="w-full" {...text('opens_at')} />
-                            <InputError message={errors.opens_at} className="mt-2" />
+                <fieldset className="fieldset">
+                    <legend>Jadwal</legend>
+
+                    <div className="row-gap" style={{ gap: 16 }}>
+                        <div style={{ flex: '1 1 240px' }}>
+                            <Field label="Dibuka" htmlFor="opens_at" error={errors.opens_at} required>
+                                <input
+                                    id="opens_at"
+                                    type="datetime-local"
+                                    className="input"
+                                    value={data.opens_at}
+                                    onChange={(e) => setData('opens_at', e.target.value)}
+                                    aria-invalid={Boolean(errors.opens_at)}
+                                />
+                            </Field>
                         </div>
-                        <div>
-                            <InputLabel htmlFor="closes_at">Ditutup</InputLabel>
-                            <TextInput id="closes_at" type="datetime-local" className="w-full" {...text('closes_at')} />
-                            <InputError message={errors.closes_at} className="mt-2" />
+                        <div style={{ flex: '1 1 240px' }}>
+                            <Field label="Ditutup" htmlFor="closes_at" error={errors.closes_at} required>
+                                <input
+                                    id="closes_at"
+                                    type="datetime-local"
+                                    className="input"
+                                    value={data.closes_at}
+                                    onChange={(e) => setData('closes_at', e.target.value)}
+                                    aria-invalid={Boolean(errors.closes_at)}
+                                />
+                            </Field>
                         </div>
                     </div>
+                </fieldset>
 
-                    <PrimaryButton disabled={processing}>Buat Lomba</PrimaryButton>
-                </form>
-            </div>
+                <div className="row-gap">
+                    <button type="submit" className="btn btn--clay" disabled={processing}>
+                        {processing ? 'Menyimpan…' : 'Buat lomba'}
+                    </button>
+                    <a href={route('admin.competitions.index')} className="btn btn--ghost">
+                        Batal
+                    </a>
+                </div>
+            </form>
         </AuthenticatedLayout>
     );
 }

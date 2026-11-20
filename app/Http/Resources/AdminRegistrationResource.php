@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\Level;
 use App\Models\Participant;
 use App\Models\Registration;
 use App\Models\RegistrationDocument;
@@ -36,6 +37,7 @@ class AdminRegistrationResource extends JsonResource
                 'id' => $this->competition->id,
                 'name' => $this->competition->name,
                 'level' => $this->competition->level,
+                'level_label' => Level::tryFrom((string) $this->competition->level)?->label() ?? (string) $this->competition->level,
             ]),
             'owner' => $this->whenLoaded('owner', fn () => [
                 'id' => $this->owner->id,

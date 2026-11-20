@@ -1,9 +1,8 @@
+import ConfirmDialog from '@/Components/app/ConfirmDialog';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Modal from '@/Components/Modal';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
-import DangerButton from '@/Components/DangerButton';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { ArrowDown, ArrowUp, Info, Lock, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface Criterion {
@@ -32,7 +31,6 @@ type Row = { name: string; weight: string; max_score: string };
 const emptyRow = (): Row => ({ name: '', weight: '', max_score: '100' });
 
 export default function Edit({ competition, criteria, rubric }: Props) {
-    const flash = (usePage().props as { flash?: { success?: string; error?: string } }).flash;
     const [rows, setRows] = useState<Row[]>(
         criteria.length > 0
             ? criteria.map((c) => ({ name: c.name, weight: String(c.weight), max_score: String(c.max_score) }))
@@ -107,8 +105,9 @@ export default function Edit({ competition, criteria, rubric }: Props) {
         <AuthenticatedLayout
             header={
                 <div>
-                    <h1 className="text-2xl font-bold">Rubrik Penilaian</h1>
-                    <p className="text-sm text-gray-500">
+                    <span className="kicker">Panitia</span>
+                    <h1>Rubrik Penilaian</h1>
+                    <p className="muted small">
                         {competition.name} — jenjang {competition.level_label}
                     </p>
                 </div>
@@ -116,173 +115,216 @@ export default function Edit({ competition, criteria, rubric }: Props) {
         >
             <Head title={`Rubrik ${competition.name}`} />
 
-            <div className="mx-auto max-w-4xl space-y-4 p-4">
-                {flash?.success && (
-                    <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">
-                        {flash.error}
-                    </div>
-                )}
+            <FlashMessage />
 
-                <div
-                    className={`rounded border px-4 py-3 text-sm ${
-                        ready
-                            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                            : 'border-amber-200 bg-amber-50 text-amber-900'
-                    }`}
-                >
-                    <p className="font-medium">
-                        {ready ? 'Rubrik siap dipakai menilai.' : 'Rubrik belum siap.'}
-                    </p>
-                    <p className="text-xs">
-                        Total bobot {total} dari 100 · {rows.filter((r) => r.name.trim() !== '').length} kriteria
-                        {ready ? '' : ' — sesuaikan bobot agar berjumlah 100.'}
-                    </p>
-                    {rubric.is_locked && (
-                        <p className="mt-1 text-xs font-medium text-red-700">
-                            Rubrik terkunci: sudah ada lembar nilai pada lomba ini.
+            <div className="panel">
+                <div className="panel__head">
+                    <div>
+                        <h2>Status rubrik</h2>
+                        <p className="muted">
+                            Total bobot {total} dari 100 · {rows.filter((r) => r.name.trim() !== '').length} kriteria
+                            {ready ? '' : ' — sesuaikan bobot agar berjumlah 100.'}
                         </p>
-                    )}
-                </div>
-
-                <div className="overflow-x-auto rounded border border-gray-200 bg-white">
-                    <table className="min-w-full text-sm">
-                        <thead>
-                            <tr className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                                <th className="px-3 py-2 w-10">#</th>
-                                <th className="px-3 py-2">Kriteria</th>
-                                <th className="px-3 py-2 w-28">Bobot</th>
-                                <th className="px-3 py-2 w-32">Nilai Maks</th>
-                                <th className="px-3 py-2 w-40">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rows.map((row, index) => (
-                                <tr key={index} className="border-t border-gray-100">
-                                    <td className="px-3 py-2 text-xs text-gray-500">{index + 1}</td>
-                                    <td className="px-3 py-2">
-                                        <input
-                                            className="w-full rounded border-gray-300 text-sm"
-                                            value={row.name}
-                                            disabled={rubric.is_locked}
-                                            onChange={(e) => updateRow(index, { name: e.target.value })}
-                                            placeholder="mis. Teknik vokal"
-                                        />
-                                        {errors[`criteria.${index}.name`] && (
-                                            <span className="text-xs text-red-600">
-                                                {errors[`criteria.${index}.name`]}
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td className="px-3 py-2">
-                                        <input
-                                            type="number"
-                                            min={1}
-                                            max={100}
-                                            className="w-20 rounded border-gray-300 text-sm"
-                                            value={row.weight}
-                                            disabled={rubric.is_locked}
-                                            onChange={(e) => updateRow(index, { weight: e.target.value })}
-                                        />
-                                        {errors[`criteria.${index}.weight`] && (
-                                            <span className="text-xs text-red-600">
-                                                {errors[`criteria.${index}.weight`]}
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td className="px-3 py-2">
-                                        <input
-                                            type="number"
-                                            min={1}
-                                            max={100}
-                                            className="w-24 rounded border-gray-300 text-sm"
-                                            value={row.max_score}
-                                            disabled={rubric.is_locked}
-                                            onChange={(e) => updateRow(index, { max_score: e.target.value })}
-                                        />
-                                        {errors[`criteria.${index}.max_score`] && (
-                                            <span className="text-xs text-red-600">
-                                                {errors[`criteria.${index}.max_score`]}
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td className="px-3 py-2">
-                                        <div className="flex gap-1 text-xs">
-                                            <button
-                                                type="button"
-                                                className="text-gray-600 hover:underline disabled:text-gray-300"
-                                                onClick={() => move(index, -1)}
-                                                disabled={rubric.is_locked || index === 0}
-                                            >
-                                                naik
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="text-gray-600 hover:underline disabled:text-gray-300"
-                                                onClick={() => move(index, 1)}
-                                                disabled={rubric.is_locked || index === rows.length - 1}
-                                            >
-                                                turun
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="text-red-600 hover:underline disabled:text-gray-300"
-                                                onClick={() => removeRow(index)}
-                                                disabled={rubric.is_locked}
-                                            >
-                                                hapus
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <SecondaryButton type="button" onClick={addRow} disabled={rubric.is_locked}>
-                        Tambah kriteria
-                    </SecondaryButton>
-
-                    <div className="flex gap-2">
-                        <SecondaryButton type="button" onClick={() => setResetOpen(true)} disabled={rubric.is_locked}>
-                            Reset ke nilai tunggal
-                        </SecondaryButton>
-                        <PrimaryButton type="button" onClick={save} disabled={rubric.is_locked || saving !== 0}>
-                            {saving === 1 ? 'Menyimpan…' : 'Simpan rubrik'}
-                        </PrimaryButton>
+                    </div>
+                    <div className="row-gap">
+                        {ready ? (
+                            <span className="badge badge--ok">Siap dipakai menilai</span>
+                        ) : (
+                            <span className="badge badge--wait">Belum siap</span>
+                        )}
+                        {rubric.is_locked && (
+                            <span className="badge badge--bad">
+                                <Lock size={13} aria-hidden />
+                                Terkunci
+                            </span>
+                        )}
                     </div>
                 </div>
 
-                <p className="text-xs text-gray-500">
-                    Bobot kriteria harus bilangan bulat minimal 1 dan totalnya 100 agar rubrik dianggap siap.
-                    Rubrik terkunci setelah juri mulai mengisi lembar nilai.
-                </p>
+                {rubric.is_locked && (
+                    <div className="toast toast--error" role="alert">
+                        <Lock size={20} aria-hidden />
+                        <span>Rubrik terkunci: sudah ada lembar nilai pada lomba ini. Kriteria tidak dapat diubah.</span>
+                    </div>
+                )}
             </div>
 
-            <Modal show={resetOpen} onClose={() => setResetOpen(false)} maxWidth="sm">
-                <div className="p-5">
-                    <h2 className="text-lg font-semibold">Reset rubrik</h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                        Seluruh kriteria diganti satu kriteria &ldquo;Nilai akhir&rdquo; berbobot 100. Tindakan ini
-                        menimpa daftar kriteria saat ini.
+            <div className="panel">
+                <div className="panel__head">
+                    <div>
+                        <h2>Kriteria penilaian</h2>
+                        <p className="muted">Susun kriteria dan bobotnya. Urutan kriteria menentukan tampilan lembar nilai juri.</p>
+                    </div>
+                    <button type="button" className="btn btn--ghost btn--sm" onClick={addRow} disabled={rubric.is_locked}>
+                        <Plus size={16} aria-hidden />
+                        Tambah kriteria
+                    </button>
+                </div>
+
+                {rows.length === 0 ? (
+                    <EmptyState
+                        title="Belum ada kriteria"
+                        description="Tambahkan minimal satu kriteria dengan total bobot 100."
+                        action={
+                            <button type="button" className="btn btn--sm" onClick={addRow} disabled={rubric.is_locked}>
+                                Tambah kriteria
+                            </button>
+                        }
+                    />
+                ) : (
+                    <div className="table-wrap">
+                        <table className="data">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Kriteria</th>
+                                    <th>Bobot</th>
+                                    <th>Nilai maks</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map((row, index) => (
+                                    <tr key={index}>
+                                        <td data-label="No" className="num strong">
+                                            {index + 1}
+                                        </td>
+                                        <td data-label="Kriteria">
+                                            <input
+                                                className="input"
+                                                value={row.name}
+                                                disabled={rubric.is_locked}
+                                                onChange={(e) => updateRow(index, { name: e.target.value })}
+                                                placeholder="mis. Teknik vokal"
+                                                aria-label={`Nama kriteria ${index + 1}`}
+                                            />
+                                            {errors[`criteria.${index}.name`] && (
+                                                <span className="error" role="alert">
+                                                    {errors[`criteria.${index}.name`]}
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td data-label="Bobot">
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                max={100}
+                                                className="input"
+                                                style={{ maxWidth: 110 }}
+                                                value={row.weight}
+                                                disabled={rubric.is_locked}
+                                                onChange={(e) => updateRow(index, { weight: e.target.value })}
+                                                aria-label={`Bobot kriteria ${index + 1}`}
+                                            />
+                                            {errors[`criteria.${index}.weight`] && (
+                                                <span className="error" role="alert">
+                                                    {errors[`criteria.${index}.weight`]}
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td data-label="Nilai maks">
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                max={100}
+                                                className="input"
+                                                style={{ maxWidth: 110 }}
+                                                value={row.max_score}
+                                                disabled={rubric.is_locked}
+                                                onChange={(e) => updateRow(index, { max_score: e.target.value })}
+                                                aria-label={`Nilai maksimal kriteria ${index + 1}`}
+                                            />
+                                            {errors[`criteria.${index}.max_score`] && (
+                                                <span className="error" role="alert">
+                                                    {errors[`criteria.${index}.max_score`]}
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td data-label="Aksi">
+                                            <div className="row-gap" style={{ gap: 8 }}>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn--ghost btn--sm"
+                                                    onClick={() => move(index, -1)}
+                                                    disabled={rubric.is_locked || index === 0}
+                                                    aria-label={`Naikkan kriteria ${index + 1}`}
+                                                    title="Naikkan"
+                                                >
+                                                    <ArrowUp size={15} aria-hidden />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn--ghost btn--sm"
+                                                    onClick={() => move(index, 1)}
+                                                    disabled={rubric.is_locked || index === rows.length - 1}
+                                                    aria-label={`Turunkan kriteria ${index + 1}`}
+                                                    title="Turunkan"
+                                                >
+                                                    <ArrowDown size={15} aria-hidden />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn--danger btn--sm"
+                                                    onClick={() => removeRow(index)}
+                                                    disabled={rubric.is_locked}
+                                                    aria-label={`Hapus kriteria ${index + 1}`}
+                                                    title="Hapus"
+                                                >
+                                                    <Trash2 size={15} aria-hidden />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                <div className="row-between" style={{ marginTop: 18 }}>
+                    <p className="hint">
+                        <Info size={14} aria-hidden /> Bobot kriteria harus bilangan bulat minimal 1 dan totalnya 100 agar
+                        rubrik dianggap siap. Rubrik terkunci setelah juri mulai mengisi lembar nilai.
                     </p>
 
-                    <div className="mt-4 flex justify-end gap-2">
-                        <SecondaryButton type="button" onClick={() => setResetOpen(false)} disabled={saving !== 0}>
-                            Batal
-                        </SecondaryButton>
-                        <DangerButton type="button" onClick={reset} disabled={saving !== 0}>
-                            {saving === 2 ? 'Memproses…' : 'Reset'}
-                        </DangerButton>
+                    <div className="row-gap">
+                        <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => setResetOpen(true)}
+                            disabled={rubric.is_locked}
+                        >
+                            <RotateCcw size={16} aria-hidden />
+                            Reset ke nilai tunggal
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn--clay btn--sm"
+                            onClick={save}
+                            disabled={rubric.is_locked || saving !== 0}
+                        >
+                            <Save size={16} aria-hidden />
+                            {saving === 1 ? 'Menyimpan…' : 'Simpan rubrik'}
+                        </button>
                     </div>
                 </div>
-            </Modal>
+            </div>
+
+            <ConfirmDialog
+                show={resetOpen}
+                danger
+                title="Reset rubrik"
+                message={
+                    <p>
+                        Seluruh kriteria diganti satu kriteria &ldquo;Nilai akhir&rdquo; berbobot 100. Tindakan ini menimpa
+                        daftar kriteria saat ini.
+                    </p>
+                }
+                confirmLabel="Ya, reset"
+                processing={saving === 2}
+                onConfirm={reset}
+                onCancel={() => setResetOpen(false)}
+            />
         </AuthenticatedLayout>
     );
 }

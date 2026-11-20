@@ -1,9 +1,11 @@
+import ConfirmDialog from '@/Components/app/ConfirmDialog';
+import Field from '@/Components/app/Field';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import Pagination from '@/Components/app/Pagination';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Modal from '@/Components/Modal';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
-import DangerButton from '@/Components/DangerButton';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { Search, ShieldBan, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 
 interface User {
@@ -22,6 +24,7 @@ interface Paginated {
     data: User[];
     links: Array<{ url: string | null; label: string; active: boolean }>;
     total: number;
+    per_page?: number;
 }
 
 interface Props {
@@ -31,7 +34,6 @@ interface Props {
 }
 
 export default function Index({ users, filters, roles }: Props) {
-    const flash = (usePage().props as { flash?: { success?: string; error?: string } }).flash;
     const [form, setForm] = useState(filters);
     const [target, setTarget] = useState<User | null>(null);
     const [busy, setBusy] = useState(false);
@@ -56,36 +58,48 @@ export default function Index({ users, filters, roles }: Props) {
     };
 
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Data Pengguna</h1>}>
+        <AuthenticatedLayout
+            header={
+                <div>
+                    <span className="kicker">Panitia</span>
+                    <h1>Data Pengguna</h1>
+                </div>
+            }
+        >
             <Head title="Data Pengguna" />
 
-            <div className="mx-auto max-w-6xl space-y-4 p-4">
-                {flash?.success && (
-                    <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">
-                        {flash.error}
-                    </div>
-                )}
+            <FlashMessage />
 
-                <div className="flex flex-wrap items-end gap-2 rounded border border-gray-200 bg-white p-3">
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Cari</span>
+            <div className="row-between">
+                <p className="muted" style={{ fontSize: 15 }}>
+                    {users.total} akun terdaftar pada Bumifest.
+                </p>
+            </div>
+
+            <section className="panel panel--flat">
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                        gap: 12,
+                        alignItems: 'end',
+                    }}
+                >
+                    <Field label="Cari pengguna" htmlFor="user-q">
                         <input
-                            className="rounded border-gray-300 text-sm"
+                            id="user-q"
+                            className="input"
                             value={form.q}
                             onChange={(e) => setForm({ ...form, q: e.target.value })}
                             onKeyDown={(e) => e.key === 'Enter' && apply()}
                             placeholder="nama / email / WhatsApp"
                         />
-                    </label>
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Peran</span>
+                    </Field>
+
+                    <Field label="Peran" htmlFor="user-role">
                         <select
-                            className="rounded border-gray-300 text-sm"
+                            id="user-role"
+                            className="select"
                             value={form.role}
                             onChange={(e) => setForm({ ...form, role: e.target.value })}
                         >
@@ -96,55 +110,75 @@ export default function Index({ users, filters, roles }: Props) {
                                 </option>
                             ))}
                         </select>
-                    </label>
-                    <PrimaryButton onClick={apply}>Terapkan</PrimaryButton>
-                </div>
+                    </Field>
 
-                <div className="overflow-x-auto rounded border border-gray-200 bg-white">
-                    <table className="min-w-full text-sm">
+                    <div>
+                        <button type="button" className="btn btn--clay btn--sm" onClick={apply}>
+                            <Search size={16} aria-hidden />
+                            Terapkan
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {users.data.length === 0 ? (
+                <EmptyState
+                    title="Tidak ada pengguna yang cocok"
+                    description="Ubah kata kunci atau peran untuk melihat akun lain."
+                />
+            ) : (
+                <div className="table-wrap">
+                    <table className="data">
                         <thead>
-                            <tr className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                                <th className="px-3 py-2">Nama</th>
-                                <th className="px-3 py-2">Kontak</th>
-                                <th className="px-3 py-2">Peran</th>
-                                <th className="px-3 py-2">Lembaga</th>
-                                <th className="px-3 py-2">Entri</th>
-                                <th className="px-3 py-2">Status</th>
-                                <th className="px-3 py-2">Aksi</th>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Kontak</th>
+                                <th>Peran</th>
+                                <th>Lembaga</th>
+                                <th>Entri</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {users.data.length === 0 && (
-                                <tr>
-                                    <td colSpan={7} className="px-3 py-8 text-center text-gray-500">
-                                        Tidak ada pengguna yang cocok.
-                                    </td>
-                                </tr>
-                            )}
                             {users.data.map((user) => (
-                                <tr key={user.id} className="border-t border-gray-100">
-                                    <td className="px-3 py-2 font-medium">{user.name}</td>
-                                    <td className="px-3 py-2 text-xs text-gray-600">
-                                        <p>{user.email}</p>
-                                        <p>{user.whatsapp ?? '—'}</p>
+                                <tr key={user.id}>
+                                    <td data-label="Nama" className="strong">
+                                        {user.name}
                                     </td>
-                                    <td className="px-3 py-2">{user.role_label}</td>
-                                    <td className="px-3 py-2 text-xs text-gray-600">{user.institution?.name ?? '—'}</td>
-                                    <td className="px-3 py-2">{user.registrations_count}</td>
-                                    <td className="px-3 py-2">
-                                        <span
-                                            className={`text-xs ${user.is_active ? 'text-emerald-700' : 'text-red-600'}`}
-                                        >
-                                            {user.is_active ? 'Aktif' : 'Nonaktif'}
+                                    <td data-label="Kontak">
+                                        <span className="small">{user.email}</span>
+                                        <span className="small muted" style={{ display: 'block' }}>
+                                            {user.whatsapp ?? '—'}
                                         </span>
                                     </td>
-                                    <td className="px-3 py-2">
+                                    <td data-label="Peran">
+                                        <span className="tag">{user.role_label}</span>
+                                    </td>
+                                    <td data-label="Lembaga">{user.institution?.name ?? '—'}</td>
+                                    <td data-label="Entri" className="num strong">
+                                        {user.registrations_count}
+                                    </td>
+                                    <td data-label="Status">
+                                        <StatusBadge value={user.is_active ? 'active' : 'inactive'} />
+                                    </td>
+                                    <td data-label="Aksi">
                                         <button
                                             type="button"
-                                            className="text-xs text-blue-600 hover:underline"
+                                            className={`btn btn--sm ${user.is_active ? 'btn--danger' : 'btn--moss'}`}
                                             onClick={() => setTarget(user)}
                                         >
-                                            {user.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                                            {user.is_active ? (
+                                                <>
+                                                    <ShieldBan size={15} aria-hidden />
+                                                    Nonaktifkan
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ShieldCheck size={15} aria-hidden />
+                                                    Aktifkan
+                                                </>
+                                            )}
                                         </button>
                                     </td>
                                 </tr>
@@ -152,59 +186,27 @@ export default function Index({ users, filters, roles }: Props) {
                         </tbody>
                     </table>
                 </div>
+            )}
 
-                <div className="flex flex-wrap items-center gap-1 text-xs">
-                    {users.links.map((link, index) =>
-                        link.url ? (
-                            <Link
-                                key={index}
-                                href={link.url}
-                                className={`rounded border px-2 py-1 ${
-                                    link.active
-                                        ? 'border-gray-800 bg-gray-800 text-white'
-                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ) : (
-                            <span
-                                key={index}
-                                className="rounded border border-gray-100 px-2 py-1 text-gray-300"
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ),
-                    )}
-                    <span className="ml-2 text-gray-500">{users.total} pengguna</span>
-                </div>
-            </div>
+            <Pagination links={users.links} total={users.total} perPage={users.per_page} />
 
-            <Modal show={target !== null} onClose={() => setTarget(null)} maxWidth="sm">
-                <div className="p-5">
-                    <h2 className="text-lg font-semibold">
-                        {target?.is_active ? 'Nonaktifkan akun' : 'Aktifkan akun'}
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-600">
+            <ConfirmDialog
+                show={target !== null}
+                title={target?.is_active ? 'Nonaktifkan akun ini?' : 'Aktifkan akun ini?'}
+                message={
+                    <p>
                         {target?.is_active
                             ? `Akun ${target?.name} tidak akan bisa masuk sampai diaktifkan kembali.`
-                            : `Akun ${target?.name} akan bisa masuk kembali.`}
+                            : `Akun ${target?.name} akan bisa masuk kembali seperti biasa.`}
                     </p>
-
-                    <div className="mt-4 flex justify-end gap-2">
-                        <SecondaryButton type="button" onClick={() => setTarget(null)} disabled={busy}>
-                            Batal
-                        </SecondaryButton>
-                        {target?.is_active ? (
-                            <DangerButton type="button" onClick={toggle} disabled={busy}>
-                                {busy ? 'Memproses…' : 'Nonaktifkan'}
-                            </DangerButton>
-                        ) : (
-                            <PrimaryButton type="button" onClick={toggle} disabled={busy}>
-                                {busy ? 'Memproses…' : 'Aktifkan'}
-                            </PrimaryButton>
-                        )}
-                    </div>
-                </div>
-            </Modal>
+                }
+                confirmLabel={target?.is_active ? 'Ya, nonaktifkan' : 'Ya, aktifkan'}
+                cancelLabel="Tidak jadi"
+                danger={Boolean(target?.is_active)}
+                processing={busy}
+                onConfirm={toggle}
+                onCancel={() => setTarget(null)}
+            />
         </AuthenticatedLayout>
     );
 }

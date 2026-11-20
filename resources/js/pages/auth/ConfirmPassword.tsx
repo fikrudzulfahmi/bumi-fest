@@ -1,7 +1,4 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Field from '@/Components/app/Field';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -23,33 +20,33 @@ export default function ConfirmPassword() {
         <GuestLayout>
             <Head title="Konfirmasi Kata Sandi" />
 
-            <div className="mb-4 text-sm text-gray-600">
-                Area ini terlindungi. Konfirmasi kata sandi Anda sebelum
-                melanjutkan.
-            </div>
+            <h1 className="auth__title">Konfirmasi Kata Sandi</h1>
+            <p className="auth__sub muted">
+                Area ini terlindungi. Masukkan kata sandi Anda sekali lagi untuk melanjutkan.
+            </p>
 
-            <form onSubmit={submit}>
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Kata Sandi" />
-
-                    <TextInput
+            <form onSubmit={submit} style={{ marginTop: 20 }}>
+                <Field label="Kata sandi" htmlFor="password" error={errors.password} required>
+                    <input
                         id="password"
                         type="password"
                         name="password"
+                        className="input"
                         value={data.password}
-                        className="mt-1 block w-full"
-                        isFocused={true}
+                        autoComplete="current-password"
+                        autoFocus
+                        aria-invalid={Boolean(errors.password)}
                         onChange={(e) => setData('password', e.target.value)}
                     />
+                </Field>
 
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
+                <button type="submit" className="btn btn--clay btn--block" disabled={processing}>
+                    {processing ? 'Memeriksa…' : 'Konfirmasi'}
+                </button>
 
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Konfirmasi
-                    </PrimaryButton>
-                </div>
+                <p className="auth__foot small muted">
+                    Lupa kata sandi? Keluar lalu gunakan menu lupa kata sandi di halaman masuk.
+                </p>
             </form>
         </GuestLayout>
     );

@@ -1,310 +1,158 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
-import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
+import {
+    CalendarDays,
+    FileText,
+    Gavel,
+    History,
+    LayoutDashboard,
+    LogOut,
+    Receipt,
+    Settings,
+    ShieldCheck,
+    Trophy,
+    UserRound,
+    Users,
+} from 'lucide-react';
 import { PropsWithChildren, ReactNode, useState } from 'react';
 
-export default function Authenticated({
-    header,
-    children,
-}: PropsWithChildren<{ header?: ReactNode }>) {
-    const user = usePage().props.auth.user;
+interface NavItem {
+    href: string;
+    label: string;
+    active: boolean;
+    icon: ReactNode;
+}
 
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+export default function Authenticated({ header, children }: PropsWithChildren<{ header?: ReactNode }>) {
+    const page = usePage();
+    const user = page.props.auth.user;
+    const current = (pattern: string) => Boolean(route().current(pattern));
+    const [open, setOpen] = useState(false);
+
+    const dashHref =
+        user.role === 'admin'
+            ? route('admin.dashboard')
+            : user.role === 'judge'
+              ? route('judge.dashboard')
+              : route('dashboard');
+
+    const participantNav: NavItem[] = [
+        { href: route('dashboard'), label: 'Dasbor', active: current('dashboard'), icon: <LayoutDashboard size={18} /> },
+        { href: route('portal.index'), label: 'Portal Lomba', active: current('portal.*'), icon: <Trophy size={18} /> },
+        { href: route('registrations.index'), label: 'Pendaftaran Saya', active: current('registrations.*'), icon: <FileText size={18} /> },
+        { href: route('invoices.index'), label: 'Tagihan', active: current('invoices.*'), icon: <Receipt size={18} /> },
+        { href: '/sertifikat', label: 'Sertifikat', active: current('certificates.*'), icon: <ShieldCheck size={18} /> },
+        { href: route('participants.index'), label: 'Data Siswa', active: current('participants.*'), icon: <Users size={18} /> },
+    ];
+
+    const adminNav: NavItem[] = [
+        { href: route('admin.dashboard'), label: 'Dasbor', active: current('admin.dashboard'), icon: <LayoutDashboard size={18} /> },
+        { href: route('admin.registrations.index'), label: 'Pendaftaran', active: current('admin.registrations.*'), icon: <FileText size={18} /> },
+        { href: route('admin.payments.index'), label: 'Pembayaran', active: current('admin.payments.*'), icon: <Receipt size={18} /> },
+        { href: route('admin.competitions.index'), label: 'Lomba', active: current('admin.competitions.*'), icon: <Trophy size={18} /> },
+        { href: route('admin.institutions.index'), label: 'Lembaga', active: current('admin.institutions.*'), icon: <Users size={18} /> },
+        { href: route('admin.users.index'), label: 'Pengguna', active: current('admin.users.*'), icon: <UserRound size={18} /> },
+        {
+            href: route('admin.judges.index'),
+            label: 'Juri & Rubrik',
+            active: current('admin.judges.*') || current('admin.rubrics.*'),
+            icon: <Gavel size={18} />,
+        },
+        { href: route('admin.logs.index'), label: 'Riwayat', active: current('admin.logs.*'), icon: <History size={18} /> },
+        { href: route('admin.settings.edit'), label: 'Pengaturan', active: current('admin.settings.*'), icon: <Settings size={18} /> },
+        {
+            href: route('admin.announcements.index'),
+            label: 'Pengumuman',
+            active: current('admin.announcements.*'),
+            icon: <CalendarDays size={18} />,
+        },
+    ];
+
+    const judgeNav: NavItem[] = [
+        { href: route('judge.dashboard'), label: 'Dasbor Juri', active: current('judge.*'), icon: <LayoutDashboard size={18} /> },
+    ];
+
+    const items = user.role === 'admin' ? adminNav : user.role === 'judge' ? judgeNav : participantNav;
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <nav className="border-b border-gray-100 bg-white">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
-                        <div className="flex">
-                            <div className="flex shrink-0 items-center">
-                                <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
-                                </Link>
-                            </div>
+        <div className="app">
+            <a href="#konten" className="skip-link">
+                Lewati ke konten
+            </a>
 
-                            <div className="hidden space-x-6 sm:-my-px sm:ms-10 sm:flex">
-                                {user.role !== 'admin' && user.role !== 'judge' && (
-                                    <NavLink
-                                        href={route('dashboard')}
-                                        active={route().current('dashboard')}
-                                    >
-                                        Dasbor
-                                    </NavLink>
-                                )}
+            <aside className={`side${open ? ' is-open' : ''}`} aria-label="Navigasi utama">
+                <div className="side__brand">
+                    <Link href="/" className="logo" style={{ fontSize: 20 }}>
+                        <i aria-hidden="true" />
+                        bumifest
+                    </Link>
+                </div>
 
-                                {user.role === 'admin' && (
-                                    <>
-                                        <NavLink
-                                            href={route('admin.dashboard')}
-                                            active={route().current('admin.dashboard')}
-                                        >
-                                            Dasbor
-                                        </NavLink>
-                                        <NavLink
-                                            href={route('admin.registrations.index')}
-                                            active={route().current('admin.registrations.*')}
-                                        >
-                                            Pendaftaran
-                                        </NavLink>
-                                        <NavLink
-                                            href={route('admin.payments.index')}
-                                            active={route().current('admin.payments.*')}
-                                        >
-                                            Pembayaran
-                                        </NavLink>
-                                        <NavLink
-                                            href={route('admin.institutions.index')}
-                                            active={route().current('admin.institutions.*')}
-                                        >
-                                            Lembaga
-                                        </NavLink>
-                                        <NavLink
-                                            href={route('admin.users.index')}
-                                            active={route().current('admin.users.*')}
-                                        >
-                                            Pengguna
-                                        </NavLink>
-                                        <NavLink
-                                            href={route('admin.competitions.index')}
-                                            active={route().current('admin.competitions.*')}
-                                        >
-                                            Lomba
-                                        </NavLink>
-                                        <NavLink
-                                            href={route('admin.judges.index')}
-                                            active={route().current('admin.judges.*') || route().current('admin.rubrics.*')}
-                                        >
-                                            Juri
-                                        </NavLink>
-                                        <NavLink
-                                            href={route('admin.logs.index')}
-                                            active={route().current('admin.logs.*')}
-                                        >
-                                            Log
-                                        </NavLink>
-                                    </>
-                                )}
+                <nav className="stack-sm" style={{ gap: 4 }}>
+                    {items.map((item) => (
+                        <Link
+                            key={item.href + item.label}
+                            href={item.href}
+                            className={`side__link${item.active ? ' is-active' : ''}`}
+                            aria-current={item.active ? 'page' : undefined}
+                            onClick={() => setOpen(false)}
+                        >
+                            <span aria-hidden="true" style={{ display: 'inline-flex', flex: 'none' }}>
+                                {item.icon}
+                            </span>
+                            {item.label}
+                        </Link>
+                    ))}
+                </nav>
 
-                                {user.role === 'judge' && (
-                                    <NavLink
-                                        href={route('judge.dashboard')}
-                                        active={route().current('judge.*')}
-                                    >
-                                        Dasbor Juri
-                                    </NavLink>
-                                )}
-                            </div>
-                        </div>
+                <div className="side__foot">
+                    <Link href={route('profile.edit')} className="side__link" style={{ padding: '6px 10px', minHeight: 40 }}>
+                        <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                            <UserRound size={16} />
+                        </span>
+                        Profil
+                    </Link>
+                    <Link
+                        href={route('logout')}
+                        method="post"
+                        as="button"
+                        className="side__link"
+                        style={{ padding: '6px 10px', minHeight: 40, width: '100%', textAlign: 'left' }}
+                    >
+                        <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                            <LogOut size={16} />
+                        </span>
+                        Keluar
+                    </Link>
+                </div>
+            </aside>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
-                            <div className="relative ms-3">
-                                <Dropdown>
-                                    <Dropdown.Trigger>
-                                        <span className="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
-                                            >
-                                                {user.name}
+            <div className="main-area">
+                <div className="topbar">
+                    <div className="row-gap" style={{ gap: 12 }}>
+                        <button
+                            type="button"
+                            className="burger"
+                            style={{ display: 'grid' }}
+                            aria-expanded={open}
+                            aria-controls="side-nav"
+                            aria-label="Buka menu"
+                            onClick={() => setOpen((v) => !v)}
+                        >
+                            {open ? '✕' : '☰'}
+                        </button>
+                        {header ?? <h1>Bumifest</h1>}
+                    </div>
 
-                                                <svg
-                                                    className="-me-0.5 ms-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </Dropdown.Trigger>
-
-                                    <Dropdown.Content>
-                                        <Dropdown.Link
-                                            href={route('profile.edit')}
-                                        >
-                                            Profil
-                                        </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href={route('logout')}
-                                            method="post"
-                                            as="button"
-                                        >
-                                            Keluar
-                                        </Dropdown.Link>
-                                    </Dropdown.Content>
-                                </Dropdown>
-                            </div>
-                        </div>
-
-                        <div className="-me-2 flex items-center sm:hidden">
-                            <button
-                                onClick={() =>
-                                    setShowingNavigationDropdown(
-                                        (previousState) => !previousState,
-                                    )
-                                }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
-                            >
-                                <svg
-                                    className="h-6 w-6"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        className={
-                                            !showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        className={
-                                            showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
+                    <div className="row-gap" style={{ gap: 10 }}>
+                        <span className="badge badge--neutral">{user.role === 'admin' ? 'Panitia' : user.role === 'judge' ? 'Juri' : 'Peserta'}</span>
+                        <span className="small strong">{user.name}</span>
                     </div>
                 </div>
 
-                <div
-                    className={
-                        (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
-                    }
-                >
-                    <div className="space-y-1 pb-3 pt-2">
-                        {user.role !== 'admin' && user.role !== 'judge' && (
-                            <ResponsiveNavLink
-                                href={route('dashboard')}
-                                active={route().current('dashboard')}
-                            >
-                                Dasbor
-                            </ResponsiveNavLink>
-                        )}
-
-                        {user.role === 'admin' && (
-                            <>
-                                <ResponsiveNavLink
-                                    href={route('admin.dashboard')}
-                                    active={route().current('admin.dashboard')}
-                                >
-                                    Dasbor
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={route('admin.registrations.index')}
-                                    active={route().current('admin.registrations.*')}
-                                >
-                                    Pendaftaran
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={route('admin.payments.index')}
-                                    active={route().current('admin.payments.*')}
-                                >
-                                    Pembayaran
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={route('admin.institutions.index')}
-                                    active={route().current('admin.institutions.*')}
-                                >
-                                    Lembaga
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={route('admin.users.index')}
-                                    active={route().current('admin.users.*')}
-                                >
-                                    Pengguna
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={route('admin.competitions.index')}
-                                    active={route().current('admin.competitions.*')}
-                                >
-                                    Lomba
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={route('admin.judges.index')}
-                                    active={
-                                        route().current('admin.judges.*') ||
-                                        route().current('admin.rubrics.*')
-                                    }
-                                >
-                                    Juri
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={route('admin.logs.index')}
-                                    active={route().current('admin.logs.*')}
-                                >
-                                    Log
-                                </ResponsiveNavLink>
-                            </>
-                        )}
-
-                        {user.role === 'judge' && (
-                            <ResponsiveNavLink
-                                href={route('judge.dashboard')}
-                                active={route().current('judge.*')}
-                            >
-                                Dasbor Juri
-                            </ResponsiveNavLink>
-                        )}
-                    </div>
-
-                    <div className="border-t border-gray-200 pb-1 pt-4">
-                        <div className="px-4">
-                            <div className="text-base font-medium text-gray-800">
-                                {user.name}
-                            </div>
-                            <div className="text-sm font-medium text-gray-500">
-                                {user.email}
-                            </div>
-                        </div>
-
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('profile.edit')}>
-                                Profil
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                method="post"
-                                href={route('logout')}
-                                as="button"
-                            >
-                                Keluar
-                            </ResponsiveNavLink>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            {header && (
-                <header className="bg-white shadow">
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                        {header}
-                    </div>
-                </header>
-            )}
-
-            <main>{children}</main>
+                <main id="konten" className="page">
+                    {children}
+                </main>
+            </div>
         </div>
     );
 }

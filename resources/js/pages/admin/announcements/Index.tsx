@@ -1,7 +1,9 @@
-import { Head, Link, router } from '@inertiajs/react';
+import ConfirmDialog from '@/Components/app/ConfirmDialog';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
-import DangerButton from '@/Components/DangerButton';
+import { Head, Link, router } from '@inertiajs/react';
+import { Pencil, Plus, Send, Trash2, Undo2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface Announcement {
     id: number;
@@ -11,72 +13,139 @@ interface Announcement {
     published_at: string | null;
 }
 
-interface Props {
-    announcements: {
-        data: Announcement[];
-        meta: { total: number };
-    };
-}
-
 const LEVEL_LABELS: Record<string, string> = {
     sd_mi: 'SD/MI',
     smp_mts: 'SMP/MTs',
 };
 
-export default function Index({ announcements }: Props) {
-    const publish = (id: number, unpublish = false) => {
-        if (unpublish) {
-            router.post(route('admin.announcements.unpublish', id));
-        } else {
-            router.post(route('admin.announcements.publish', id));
-        }
+export default function Index({ announcements }: { announcements: { data: Announcement[]; total?: number } }) {
+    const rows = announcements.data ?? [];
+    const [deleting, setDeleting] = useState<Announcement | null>(null);
+    const [processing, setProcessing] = useState(false);
+
+    const togglePublish = (item: Announcement) => {
+        router.post(
+            item.published_at
+                ? route('admin.announcements.unpublish', item.id)
+                : route('admin.announcements.publish', item.id),
+            {},
+            { preserveScroll: true },
+        );
     };
 
-    const remove = (id: number) => {
-        if (confirm('Hapus pengumuman ini?')) {
-            router.delete(route('admin.announcements.destroy', id));
+    const confirmDelete = () => {
+        if (!deleting) {
+            return;
         }
+
+        setProcessing(true);
+        router.delete(route('admin.announcements.destroy', deleting.id), {
+            preserveScroll: true,
+            onFinish: () => setProcessing(false),
+            onSuccess: () => setDeleting(null),
+        });
     };
 
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Kelola Pengumuman</h1>}>
+        <AuthenticatedLayout
+            header={
+                <div>
+                    <span className="kicker">Panitia</span>
+                    <h1>Pengumuman</h1>
+                </div>
+            }
+        >
             <Head title="Kelola Pengumuman" />
 
-            <div className="max-w-5xl mx-auto p-4">
-                <div className="mb-6">
-                    <Link href={route('admin.announcements.create')}>
-                        <PrimaryButton>Tambah Pengumuman</PrimaryButton>
-                    </Link>
-                </div>
+            <FlashMessage />
 
-                <div className="space-y-3">
-                    {announcements.data?.map((item) => (
-                        <div key={item.id} className="border border-gray-200 rounded p-4">
-                            <div className="flex items-center gap-2">
-                                <span className="font-medium">{item.title}</span>
-                                <span className="text-sm text-gray-500">
-                                    {item.level ? LEVEL_LABELS[item.level] : 'Umum'}
-                                </span>
-                                <span className={`text-xs px-2 py-0.5 rounded ${item.published_at ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+            <div className="row-between">
+                <p className="muted" style={{ fontSize: 15 }}>
+                    {announcements.total ?? rows.length} pengumuman.
+                </p>
+                <Link href={route('admin.announcements.create')} className="btn btn--clay btn--sm">
+                    <Plus size={16} aria-hidden />
+                    Tambah pengumuman
+                </Link>
+            </div>
+
+            {rows.length === 0 ? (
+                <EmptyState
+                    title="Belum ada pengumuman"
+                    description="Buat pengumuman untuk memberi info kepada peserta."
+                    action={
+                        <Link href={route('admin.announcements.create')} className="btn btn--sm">
+                            Tambah pengumuman
+                        </Link>
+                    }
+                />
+            ) : (
+                <div className="stack">
+                    {rows.map((item) => (
+                        <article key={item.id} className="panel">
+                            <div className="panel__head">
+                                <div>
+                                    <h2 style={{ fontSize: '1.25rem' }}>{item.title}</h2>
+                                    <p className="small muted" style={{ marginTop: 4 }}>
+                                        {item.level ? LEVEL_LABELS[item.level] : 'Umum'}
+                                    </p>
+                                </div>
+                                <span className={`badge ${item.published_at ? 'badge--ok' : 'badge--neutral'}`}>
                                     {item.published_at ? 'Terbit' : 'Draf'}
                                 </span>
                             </div>
-                            <p className="text-sm text-gray-600 mt-1">{item.body}</p>
-                            <div className="flex gap-2 mt-3">
-                                {item.published_at ? (
-                                    <button onClick={() => publish(item.id, true)} className="text-sm text-gray-600 hover:underline">Tarik</button>
-                                ) : (
-                                    <button onClick={() => publish(item.id)} className="text-sm text-blue-600 hover:underline">Terbitkan</button>
-                                )}
-                                <Link href={route('admin.announcements.edit', item.id)}>
-                                    <span className="text-sm text-blue-600 hover:underline">Edit</span>
+
+                            <p style={{ fontSize: 15 }}>{item.body}</p>
+
+                            <div className="row-gap" style={{ gap: 8, marginTop: 16 }}>
+                                <button type="button" className="btn btn--ghost btn--sm" onClick={() => togglePublish(item)}>
+                                    {item.published_at ? (
+                                        <>
+                                            <Undo2 size={15} aria-hidden />
+                                            Tarik
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send size={15} aria-hidden />
+                                            Terbitkan
+                                        </>
+                                    )}
+                                </button>
+                                <Link
+                                    href={route('admin.announcements.edit', item.id)}
+                                    className="btn btn--ghost btn--sm"
+                                >
+                                    <Pencil size={15} aria-hidden />
+                                    Edit
                                 </Link>
-                                <button onClick={() => remove(item.id)} className="text-sm text-red-600 hover:underline">Hapus</button>
+                                <button
+                                    type="button"
+                                    className="btn btn--danger btn--sm"
+                                    onClick={() => setDeleting(item)}
+                                >
+                                    <Trash2 size={15} aria-hidden />
+                                    Hapus
+                                </button>
                             </div>
-                        </div>
+                        </article>
                     ))}
                 </div>
-            </div>
+            )}
+
+            <ConfirmDialog
+                show={deleting !== null}
+                title="Hapus pengumuman ini?"
+                danger
+                processing={processing}
+                confirmLabel="Ya, hapus"
+                onConfirm={confirmDelete}
+                onCancel={() => setDeleting(null)}
+                message={
+                    <p className="muted" style={{ fontSize: 15 }}>
+                        Pengumuman “{deleting?.title}” akan dihapus permanen.
+                    </p>
+                }
+            />
         </AuthenticatedLayout>
     );
 }

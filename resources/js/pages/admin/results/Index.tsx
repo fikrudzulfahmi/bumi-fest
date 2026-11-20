@@ -1,8 +1,9 @@
+import ConfirmDialog from '@/Components/app/ConfirmDialog';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Modal from '@/Components/Modal';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { AlertTriangle, Calculator, Lock, LockOpen, Save, Send } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface Row {
@@ -46,7 +47,6 @@ interface Props {
 }
 
 export default function Index({ competition, rows, suggestions, rubric, judges, sheets }: Props) {
-    const flash = (usePage().props as { flash?: { success?: string; error?: string } }).flash;
     const published = competition.results_published_at !== null;
 
     const [placements, setPlacements] = useState<Record<string, string>>(() => {
@@ -60,6 +60,7 @@ export default function Index({ competition, rows, suggestions, rubric, judges, 
     const [confirm, setConfirm] = useState<null | 'publish' | 'compute' | 'unlock-all'>(null);
     const [unlocking, setUnlocking] = useState<SheetRow | null>(null);
     const [allowIncomplete, setAllowIncomplete] = useState(false);
+    const [busy, setBusy] = useState(false);
 
     const assigned = useMemo(() => Object.values(placements).filter((v) => v !== ''), [placements]);
     const duplicatePlacement = useMemo(() => {
@@ -84,32 +85,51 @@ export default function Index({ competition, rows, suggestions, rubric, judges, 
     };
 
     const doCompute = () => {
+        setBusy(true);
         router.post(route('admin.results.compute', competition.id), {}, {
             preserveScroll: true,
-            onFinish: () => setConfirm(null),
+            onFinish: () => {
+                setBusy(false);
+                setConfirm(null);
+            },
         });
     };
 
     const doPublish = () => {
+        setBusy(true);
         router.post(
             route('admin.results.publish', competition.id),
             { allow_incomplete: allowIncomplete },
-            { preserveScroll: true, onFinish: () => setConfirm(null) },
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setBusy(false);
+                    setConfirm(null);
+                },
+            },
         );
     };
 
     const doUnlockAll = () => {
+        setBusy(true);
         router.post(route('admin.results.unlock-all', competition.id), {}, {
             preserveScroll: true,
-            onFinish: () => setConfirm(null),
+            onFinish: () => {
+                setBusy(false);
+                setConfirm(null);
+            },
         });
     };
 
     const doUnlock = () => {
         if (!unlocking) return;
+        setBusy(true);
         router.post(route('admin.results.unlock', unlocking.id), {}, {
             preserveScroll: true,
-            onFinish: () => setUnlocking(null),
+            onFinish: () => {
+                setBusy(false);
+                setUnlocking(null);
+            },
         });
     };
 
@@ -119,8 +139,9 @@ export default function Index({ competition, rows, suggestions, rubric, judges, 
         <AuthenticatedLayout
             header={
                 <div>
-                    <h1 className="text-2xl font-bold">Hasil Lomba</h1>
-                    <p className="text-sm text-gray-500">
+                    <span className="kicker">Panitia</span>
+                    <h1>Hasil Lomba</h1>
+                    <p className="muted small">
                         {competition.name} — jenjang {competition.level_label}
                     </p>
                 </div>
@@ -128,256 +149,348 @@ export default function Index({ competition, rows, suggestions, rubric, judges, 
         >
             <Head title={`Hasil ${competition.name}`} />
 
-            <div className="mx-auto max-w-6xl space-y-4 p-4">
-                {flash?.success && (
-                    <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                        {flash.error}
-                    </div>
-                )}
+            <FlashMessage />
 
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="rounded bg-gray-100 px-2 py-1 text-gray-600">
-                            {rows.length} entri terverifikasi
-                        </span>
-                        <span className="rounded bg-gray-100 px-2 py-1 text-gray-600">
-                            {judges.length} juri ditugaskan
-                        </span>
-                        <span
-                            className={`rounded px-2 py-1 ${
-                                rubric.is_ready ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
-                            }`}
-                        >
-                            Rubrik: {rubric.criteria_count} kriteria, bobot {rubric.total_weight}
-                        </span>
-                        {published && (
-                            <span className="rounded bg-emerald-600 px-2 py-1 text-white">Hasil sudah terbit</span>
-                        )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                        <SecondaryButton onClick={() => setConfirm('compute')} disabled={published}>
-                            Hitung ulang
-                        </SecondaryButton>
-                        <SecondaryButton onClick={() => setConfirm('unlock-all')} disabled={published}>
-                            Buka semua kunci
-                        </SecondaryButton>
-                        <PrimaryButton onClick={() => setConfirm('publish')} disabled={published}>
-                            {published ? 'Sudah terbit' : 'Terbitkan hasil'}
-                        </PrimaryButton>
-                    </div>
+            <div className="stat-grid">
+                <div className="stat">
+                    <b>{rows.length}</b>
+                    <span>Entri terverifikasi</span>
                 </div>
-
-                {!rubric.is_ready && (
-                    <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                        {rubric.message ?? 'Rubrik belum siap.'}{' '}
-                        <Link href={route('admin.rubrics.edit', competition.id)} className="underline">
-                            Perbaiki rubrik
-                        </Link>
-                    </div>
-                )}
-
-                {incompleteCount > 0 && (
-                    <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                        {incompleteCount} entri belum punya nilai lengkap (semua juri terkunci).
-                    </div>
-                )}
-
-                <div className="overflow-x-auto rounded border border-gray-200 bg-white">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-                            <tr>
-                                <th className="px-3 py-2">#</th>
-                                <th className="px-3 py-2">Kode</th>
-                                <th className="px-3 py-2">Peserta</th>
-                                <th className="px-3 py-2">Sekolah</th>
-                                <th className="px-3 py-2">Lembar</th>
-                                <th className="px-3 py-2">Nilai akhir</th>
-                                <th className="px-3 py-2">Juara</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {rows.map((row) => (
-                                <tr key={row.id} className={row.is_tie ? 'bg-amber-50/50' : undefined}>
-                                    <td className="px-3 py-2 font-semibold">{row.rank ?? '—'}</td>
-                                    <td className="px-3 py-2 font-mono text-xs text-gray-600">{row.code}</td>
-                                    <td className="px-3 py-2">
-                                        <p className="font-medium">
-                                            {row.team_name ?? (row.names.join(', ') || 'Tanpa nama')}
-                                        </p>
-                                        {row.team_name && row.names.length > 0 && (
-                                            <p className="text-xs text-gray-500">{row.names.join(', ')}</p>
-                                        )}
-                                    </td>
-                                    <td className="px-3 py-2 text-xs text-gray-600">{row.school_name ?? '—'}</td>
-                                    <td className="px-3 py-2 text-xs text-gray-600">
-                                        {row.sheets_locked}/{row.sheets_total}
-                                    </td>
-                                    <td className="px-3 py-2 font-semibold">
-                                        {row.final_score !== null ? row.final_score.toFixed(2) : '—'}
-                                        {row.is_tie && (
-                                            <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] text-amber-900">
-                                                SERI
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td className="px-3 py-2">
-                                        <select
-                                            aria-label={`Juara entri ${row.code}`}
-                                            value={placements[String(row.id)] ?? ''}
-                                            disabled={published || !row.is_complete}
-                                            onChange={(event) => setPlacement(row.id, event.target.value)}
-                                            className="min-h-11 rounded border-gray-300 text-sm disabled:bg-gray-100"
-                                        >
-                                            <option value="">—</option>
-                                            <option value="1">1</option>
-                                            <option value="2">2</option>
-                                            <option value="3">3</option>
-                                        </select>
-                                    </td>
-                                </tr>
-                            ))}
-                            {rows.length === 0 && (
-                                <tr>
-                                    <td colSpan={7} className="px-3 py-8 text-center text-gray-500">
-                                        Belum ada entri terverifikasi pada lomba ini.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                <div className="stat">
+                    <b>{judges.length}</b>
+                    <span>Juri ditugaskan</span>
                 </div>
-
-                {!published && (
-                    <div className="rounded border border-gray-200 bg-white p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div>
-                                <h2 className="font-semibold">Tetapkan juara</h2>
-                                <p className="text-xs text-gray-500">
-                                    Saran dari peringkat: {suggestions.length} entri
-                                    {suggestions.length > 0 &&
-                                        ` (${suggestions.map((row) => `#${row.rank}`).join(', ')})`}
-                                    . Peringkat boleh dipakai bersama bila seri.
-                                </p>
-                            </div>
-                            <PrimaryButton onClick={savePlacements} disabled={duplicatePlacement}>
-                                Simpan juara
-                            </PrimaryButton>
-                        </div>
-                        {duplicatePlacement && (
-                            <p className="mt-2 text-xs text-red-600">
-                                Peringkat 1 hanya boleh satu entri. Peringkat 2 dan 3 boleh dipakai bersama bila seri.
-                            </p>
-                        )}
-                    </div>
-                )}
-
-                <div className="rounded border border-gray-200 bg-white">
-                    <div className="border-b border-gray-100 px-4 py-3">
-                        <h2 className="font-semibold">Lembar nilai</h2>
-                        <p className="text-xs text-gray-500">
-                            Buka kunci hanya bila hasil belum diterbitkan. Setelah dibuka, juri wajib mengunci ulang.
-                        </p>
-                    </div>
-                    <ul className="divide-y divide-gray-100">
-                        {sheets.map((sheet) => (
-                            <li key={sheet.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                                <div className="text-sm">
-                                    <p className="font-medium">{sheet.judge_name ?? 'Juri'}</p>
-                                    <p className="text-xs text-gray-500">
-                                        Entri {sheet.registration_code ?? '—'} · {sheet.status_label}
-                                        {sheet.total !== null && ` · total ${sheet.total.toFixed(2)}`}
-                                    </p>
-                                </div>
-                                {sheet.status === 'locked' && (
-                                    <SecondaryButton onClick={() => setUnlocking(sheet)} disabled={published}>
-                                        Buka kunci
-                                    </SecondaryButton>
-                                )}
-                            </li>
-                        ))}
-                        {sheets.length === 0 && (
-                            <li className="px-4 py-6 text-center text-sm text-gray-500">Belum ada nilai tersimpan.</li>
-                        )}
-                    </ul>
+                <div className="stat">
+                    <b>{rubric.total_weight}</b>
+                    <span>Total bobot rubrik</span>
+                    <small className="muted">{rubric.criteria_count} kriteria penilaian</small>
+                </div>
+                <div className="stat">
+                    <b>{incompleteCount}</b>
+                    <span>Entri belum lengkap</span>
+                    <small className="muted">Semua juri belum mengunci</small>
                 </div>
             </div>
 
-            <Modal show={confirm !== null} onClose={() => setConfirm(null)} maxWidth="md">
-                <div className="p-6">
-                    {confirm === 'compute' && (
-                        <>
-                            <h2 className="text-lg font-semibold">Hitung ulang nilai akhir?</h2>
-                            <p className="mt-2 text-sm text-gray-600">
-                                Nilai akhir dihitung dari rata-rata lembar terkunci semua juri. Entri yang belum lengkap
-                                tetap tanpa nilai.
-                            </p>
-                        </>
-                    )}
-                    {confirm === 'unlock-all' && (
-                        <>
-                            <h2 className="text-lg font-semibold">Buka semua kunci?</h2>
-                            <p className="mt-2 text-sm text-gray-600">
-                                Semua lembar nilai kembali menjadi draf dan totalnya dikosongkan. Juri harus mengunci
-                                ulang sebelum hasil bisa diterbitkan.
-                            </p>
-                        </>
-                    )}
-                    {confirm === 'publish' && (
-                        <>
-                            <h2 className="text-lg font-semibold">Terbitkan hasil lomba?</h2>
-                            <p className="mt-2 text-sm text-gray-600">
-                                Juara tampil di portal dan peserta menerima notifikasi. Sertifikat mulai dibuat di
-                                antrean. Tindakan ini tidak bisa dibatalkan.
-                            </p>
-                            {incompleteCount > 0 && (
-                                <label className="mt-3 flex items-start gap-2 text-sm text-amber-900">
-                                    <input
-                                        type="checkbox"
-                                        checked={allowIncomplete}
-                                        onChange={(event) => setAllowIncomplete(event.target.checked)}
-                                        className="mt-1 rounded border-gray-300"
-                                    />
-                                    <span>
-                                        Terbitkan walau {incompleteCount} entri belum lengkap (entri itu tanpa
-                                        peringkat).
-                                    </span>
-                                </label>
+            <div className="panel">
+                <div className="panel__head">
+                    <div>
+                        <h2>Tindakan hasil</h2>
+                        <p className="muted">
+                            Hitung nilai akhir, tetapkan juara, lalu terbitkan hasil ke portal peserta.
+                        </p>
+                        <div className="row-gap" style={{ marginTop: 10 }}>
+                            <span className="badge badge--neutral">{rows.length} entri</span>
+                            <span className="badge badge--neutral">{judges.length} juri</span>
+                            {rubric.is_ready ? (
+                                <span className="badge badge--ok">Rubrik siap</span>
+                            ) : (
+                                <span className="badge badge--wait">Rubrik belum siap</span>
                             )}
-                        </>
-                    )}
+                            {published ? (
+                                <span className="badge badge--ok">Hasil sudah terbit</span>
+                            ) : (
+                                <span className="badge badge--info">Belum terbit</span>
+                            )}
+                        </div>
+                    </div>
 
-                    <div className="mt-4 flex justify-end gap-2">
-                        <SecondaryButton onClick={() => setConfirm(null)}>Batal</SecondaryButton>
-                        <PrimaryButton
-                            onClick={
-                                confirm === 'compute' ? doCompute : confirm === 'publish' ? doPublish : doUnlockAll
-                            }
+                    <div className="row-gap">
+                        <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => setConfirm('compute')}
+                            disabled={published}
                         >
-                            Lanjutkan
-                        </PrimaryButton>
+                            <Calculator size={16} aria-hidden />
+                            Hitung ulang
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => setConfirm('unlock-all')}
+                            disabled={published}
+                        >
+                            <LockOpen size={16} aria-hidden />
+                            Buka semua kunci
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn--clay btn--sm"
+                            onClick={() => setConfirm('publish')}
+                            disabled={published}
+                        >
+                            <Send size={16} aria-hidden />
+                            {published ? 'Sudah terbit' : 'Terbitkan hasil'}
+                        </button>
                     </div>
                 </div>
-            </Modal>
+            </div>
 
-            <Modal show={unlocking !== null} onClose={() => setUnlocking(null)} maxWidth="md">
-                <div className="p-6">
-                    <h2 className="text-lg font-semibold">Buka kunci lembar ini?</h2>
-                    <p className="mt-2 text-sm text-gray-600">
-                        Lembar {unlocking?.judge_name ?? 'juri'} untuk entri {unlocking?.registration_code ?? '—'}{' '}
-                        kembali menjadi draf dan totalnya dikosongkan.
-                    </p>
-                    <div className="mt-4 flex justify-end gap-2">
-                        <SecondaryButton onClick={() => setUnlocking(null)}>Batal</SecondaryButton>
-                        <PrimaryButton onClick={doUnlock}>Buka kunci</PrimaryButton>
+            {!rubric.is_ready && (
+                <div className="toast toast--warn" role="alert">
+                    <AlertTriangle size={20} aria-hidden />
+                    <span>
+                        {rubric.message ?? 'Rubrik belum siap.'}{' '}
+                        <Link href={route('admin.rubrics.edit', competition.id)} className="strong">
+                            Perbaiki rubrik
+                        </Link>
+                    </span>
+                </div>
+            )}
+
+            {incompleteCount > 0 && (
+                <div className="toast toast--warn" role="alert">
+                    <AlertTriangle size={20} aria-hidden />
+                    <span>{incompleteCount} entri belum punya nilai lengkap (semua juri terkunci).</span>
+                </div>
+            )}
+
+            <div className="panel">
+                <div className="panel__head">
+                    <div>
+                        <h2>Peringkat &amp; nilai akhir</h2>
+                        <p className="muted">
+                            Peringkat dihitung dari rata-rata lembar nilai terkunci seluruh juri.
+                        </p>
                     </div>
                 </div>
-            </Modal>
+
+                {rows.length === 0 ? (
+                    <EmptyState
+                        title="Belum ada entri terverifikasi"
+                        description="Entri akan muncul di sini setelah pendaftaran diverifikasi panitia."
+                    />
+                ) : (
+                    <div className="table-wrap">
+                        <table className="data">
+                            <thead>
+                                <tr>
+                                    <th>Peringkat</th>
+                                    <th>Kode</th>
+                                    <th>Peserta</th>
+                                    <th>Sekolah</th>
+                                    <th>Lembar</th>
+                                    <th>Nilai akhir</th>
+                                    <th>Juara</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map((row) => (
+                                    <tr key={row.id}>
+                                        <td data-label="Peringkat" className="num strong">
+                                            {row.rank ?? '—'}
+                                        </td>
+                                        <td data-label="Kode" className="small nowrap">
+                                            {row.code}
+                                        </td>
+                                        <td data-label="Peserta">
+                                            <p className="strong">
+                                                {row.team_name ?? (row.names.join(', ') || 'Tanpa nama')}
+                                            </p>
+                                            {row.team_name && row.names.length > 0 && (
+                                                <p className="small muted">{row.names.join(', ')}</p>
+                                            )}
+                                        </td>
+                                        <td data-label="Sekolah" className="small muted">
+                                            {row.school_name ?? '—'}
+                                        </td>
+                                        <td data-label="Lembar" className="num small">
+                                            {row.sheets_locked}/{row.sheets_total}
+                                        </td>
+                                        <td data-label="Nilai akhir" className="num strong">
+                                            <span className="row-gap" style={{ gap: 8 }}>
+                                                {row.final_score !== null ? row.final_score.toFixed(2) : '—'}
+                                                {row.is_tie && <span className="badge badge--wait">Seri</span>}
+                                            </span>
+                                        </td>
+                                        <td data-label="Juara">
+                                            <select
+                                                aria-label={`Juara entri ${row.code}`}
+                                                value={placements[String(row.id)] ?? ''}
+                                                disabled={published || !row.is_complete}
+                                                onChange={(event) => setPlacement(row.id, event.target.value)}
+                                                className="select"
+                                                style={{ maxWidth: 110 }}
+                                            >
+                                                <option value="">—</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            {!published && (
+                <div className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <h2>Tetapkan juara</h2>
+                            <p className="muted">
+                                Saran dari peringkat: {suggestions.length} entri
+                                {suggestions.length > 0 && ` (${suggestions.map((row) => `#${row.rank}`).join(', ')})`}.
+                                Peringkat boleh dipakai bersama bila seri.
+                            </p>
+                        </div>
+                        <button type="button" className="btn btn--clay btn--sm" onClick={savePlacements} disabled={duplicatePlacement}>
+                            <Save size={16} aria-hidden />
+                            Simpan juara
+                        </button>
+                    </div>
+                    {duplicatePlacement && (
+                        <p className="error" role="alert">
+                            Peringkat 1 hanya boleh satu entri. Peringkat 2 dan 3 boleh dipakai bersama bila seri.
+                        </p>
+                    )}
+                </div>
+            )}
+
+            <div className="panel">
+                <div className="panel__head">
+                    <div>
+                        <h2>Lembar nilai</h2>
+                        <p className="muted">
+                            Buka kunci hanya bila hasil belum diterbitkan. Setelah dibuka, juri wajib mengunci ulang.
+                        </p>
+                    </div>
+                    <span className="badge badge--neutral">{sheets.length} lembar</span>
+                </div>
+
+                {sheets.length === 0 ? (
+                    <EmptyState title="Belum ada nilai tersimpan" description="Lembar nilai muncul setelah juri menyimpan penilaian." />
+                ) : (
+                    <div className="table-wrap">
+                        <table className="data">
+                            <thead>
+                                <tr>
+                                    <th>Juri</th>
+                                    <th>Entri</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sheets.map((sheet) => (
+                                    <tr key={sheet.id}>
+                                        <td data-label="Juri" className="strong">
+                                            {sheet.judge_name ?? 'Juri'}
+                                        </td>
+                                        <td data-label="Entri" className="small nowrap">
+                                            {sheet.registration_code ?? '—'}
+                                        </td>
+                                        <td data-label="Status">
+                                            <StatusBadge value={sheet.status} label={sheet.status_label} />
+                                        </td>
+                                        <td data-label="Total" className="num">
+                                            {sheet.total !== null ? sheet.total.toFixed(2) : '—'}
+                                        </td>
+                                        <td data-label="Aksi">
+                                            {sheet.status === 'locked' ? (
+                                                <button
+                                                    type="button"
+                                                    className="btn btn--ghost btn--sm"
+                                                    onClick={() => setUnlocking(sheet)}
+                                                    disabled={published}
+                                                >
+                                                    <LockOpen size={15} aria-hidden />
+                                                    Buka kunci
+                                                </button>
+                                            ) : (
+                                                <span className="small muted nowrap">
+                                                    <Lock size={14} aria-hidden /> Menunggu kunci juri
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            <ConfirmDialog
+                show={confirm === 'compute'}
+                title="Hitung ulang nilai akhir?"
+                message={
+                    <p>
+                        Nilai akhir dihitung dari rata-rata lembar terkunci semua juri. Entri yang belum lengkap tetap tanpa
+                        nilai.
+                    </p>
+                }
+                confirmLabel="Ya, hitung ulang"
+                processing={busy}
+                onConfirm={doCompute}
+                onCancel={() => setConfirm(null)}
+            />
+
+            <ConfirmDialog
+                show={confirm === 'unlock-all'}
+                danger
+                title="Buka semua kunci?"
+                message={
+                    <p>
+                        Semua lembar nilai kembali menjadi draf dan totalnya dikosongkan. Juri harus mengunci ulang sebelum
+                        hasil bisa diterbitkan.
+                    </p>
+                }
+                confirmLabel="Ya, buka semua kunci"
+                processing={busy}
+                onConfirm={doUnlockAll}
+                onCancel={() => setConfirm(null)}
+            />
+
+            <ConfirmDialog
+                show={confirm === 'publish'}
+                title="Terbitkan hasil lomba?"
+                message={
+                    <>
+                        <p>
+                            Juara tampil di portal dan peserta menerima notifikasi. Sertifikat mulai dibuat di antrean.
+                            Tindakan ini tidak bisa dibatalkan.
+                        </p>
+                        {incompleteCount > 0 && (
+                            <label className="check">
+                                <input
+                                    type="checkbox"
+                                    checked={allowIncomplete}
+                                    onChange={(event) => setAllowIncomplete(event.target.checked)}
+                                />
+                                <span>
+                                    Terbitkan walau {incompleteCount} entri belum lengkap (entri itu tanpa peringkat).
+                                </span>
+                            </label>
+                        )}
+                    </>
+                }
+                confirmLabel="Ya, terbitkan"
+                processing={busy}
+                onConfirm={doPublish}
+                onCancel={() => setConfirm(null)}
+            />
+
+            <ConfirmDialog
+                show={unlocking !== null}
+                danger
+                title="Buka kunci lembar ini?"
+                message={
+                    <p>
+                        Lembar {unlocking?.judge_name ?? 'juri'} untuk entri {unlocking?.registration_code ?? '—'} kembali
+                        menjadi draf dan totalnya dikosongkan.
+                    </p>
+                }
+                confirmLabel="Buka kunci"
+                processing={busy}
+                onConfirm={doUnlock}
+                onCancel={() => setUnlocking(null)}
+            />
         </AuthenticatedLayout>
     );
 }

@@ -1,6 +1,10 @@
-import { Head, router } from '@inertiajs/react';
+import ConfirmDialog from '@/Components/app/ConfirmDialog';
+import FlashMessage from '@/Components/app/FlashMessage';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
+import { formatRupiah } from '@/lib/format';
+import { Head, router } from '@inertiajs/react';
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Send, Upload } from 'lucide-react';
+import { useState } from 'react';
 
 interface Competition {
     id: number;
@@ -34,6 +38,7 @@ interface Props {
 
 export default function Collective({ competition, level, preview }: Props) {
     const isTeam = competition.category === 'team';
+    const [confirmToken, setConfirmToken] = useState<string | null>(null);
 
     const activePreview = preview;
 
@@ -52,85 +57,173 @@ export default function Collective({ competition, level, preview }: Props) {
     };
 
     const handleCommit = (token: string) => {
-        if (!confirm('Kirim pendaftaran kolektif? Satu tagihan akan dibuat.')) return;
-        router.post(route('collective-registrations.commit', { level, competition: competition.slug }), { token }, {
-            preserveScroll: true,
-        });
+        router.post(
+            route('collective-registrations.commit', { level, competition: competition.slug }),
+            { token },
+            {
+                preserveScroll: true,
+                onFinish: () => setConfirmToken(null),
+            }
+        );
     };
 
     return (
-        <AuthenticatedLayout
-            header={<h1 className="text-2xl font-bold">Pendaftaran Kolektif: {competition.name}</h1>}
-        >
+        <AuthenticatedLayout header={<h1>Pendaftaran Kolektif: {competition.name}</h1>}>
             <Head title="Daftar Kolektif" />
 
-            <div className="max-w-3xl mx-auto p-4 space-y-4">
-                <div className="border border-gray-200 rounded p-4">
-                    <p className="text-sm text-gray-600">
-                        Impor siswa sekolah Anda lewat <b>Excel (.xlsx)</b> atau <b>CSV</b>. Kolom:
-                        <code> nama_siswa, kelas{isTeam ? ', tim' : ''}</code>.
-                        {isTeam && (
-                            <> Baris dengan nama tim sama menjadi satu tim ({competition.team_min}–{competition.team_max} anggota).</>
-                        )}
-                        Biaya: Rp {competition.fee.toLocaleString('id-ID')} per entri.
-                    </p>
-                    <a
-                        href={route('collective-registrations.template', { level, competition: competition.slug })}
-                        className="text-blue-600 hover:underline text-sm inline-block mt-2"
-                    >
-                        Unduh template CSV
-                    </a>
-                </div>
+            <FlashMessage />
 
-                <div className="border border-gray-200 rounded p-4">
-                    <p className="text-sm font-medium mb-2">1. Unggah berkas (pratinjau)</p>
+            <div className="stack">
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Impor massal</span>
+                            <h2>Unggah daftar siswa</h2>
+                            <p className="muted">
+                                Impor siswa sekolah Anda lewat berkas <span className="strong">Excel (.xlsx)</span> atau{' '}
+                                <span className="strong">CSV</span>. Satu berkas menjadi satu tagihan.
+                            </p>
+                        </div>
+                        <a
+                            className="btn btn--ghost btn--sm"
+                            href={route('collective-registrations.template', { level, competition: competition.slug })}
+                        >
+                            <Download size={16} aria-hidden />
+                            Unduh template CSV
+                        </a>
+                    </div>
+
+                    <div className="stat-grid">
+                        <div className="stat">
+                            <b style={{ fontSize: '1.3rem' }}>{formatRupiah(competition.fee)}</b>
+                            <span>Biaya per entri</span>
+                        </div>
+                        <div className="stat">
+                            <b style={{ fontSize: '1.3rem' }}>{isTeam ? 'Beregu' : 'Individu'}</b>
+                            <span>Kategori lomba</span>
+                        </div>
+                        <div className="stat">
+                            <b style={{ fontSize: '1.3rem' }}>
+                                {isTeam ? `${competition.team_min}–${competition.team_max}` : '1'}
+                            </b>
+                            <span>Anggota per entri</span>
+                        </div>
+                    </div>
+
+                    <div className="hint" style={{ marginTop: 16 }}>
+                        Kolom wajib: <span className="strong">nama_siswa</span>, <span className="strong">kelas</span>
+                        {isTeam ? (
+                            <>
+                                , dan <span className="strong">tim</span>. Baris dengan nama tim sama digabung menjadi satu
+                                tim ({competition.team_min}–{competition.team_max} anggota).
+                            </>
+                        ) : (
+                            '. Satu baris mewakili satu peserta.'
+                        )}
+                    </div>
+                </section>
+
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Langkah 1</span>
+                            <h3>Unggah berkas untuk pratinjau</h3>
+                            <p className="muted">Berkas diperiksa lebih dulu. Tidak ada data yang disimpan di tahap ini.</p>
+                        </div>
+                    </div>
+
+                    <label className="label" htmlFor="collective-file">
+                        Berkas daftar siswa (.xlsx, .xls, .csv)
+                    </label>
                     <input
+                        id="collective-file"
                         type="file"
+                        className="input"
                         accept=".xlsx,.xls,.csv"
                         onChange={(e) => {
                             const f = e.target.files?.[0];
                             if (f) handlePreview(f);
                         }}
-                        className="text-sm"
                     />
-                </div>
+                    <p className="hint">
+                        <Upload size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> Pratinjau otomatis dijalankan
+                        setelah berkas dipilih.
+                    </p>
+                </section>
 
                 {activePreview ? (
-                    <div className="border border-gray-200 rounded p-4 space-y-3">
-                        <p className="text-sm font-medium">2. Hasil pratinjau</p>
-
-                        <div className="text-sm">
-                            <span className="text-gray-600">Jumlah entri: {activePreview.entries ?? 0}</span>
+                    <section className="panel">
+                        <div className="panel__head">
+                            <div>
+                                <span className="kicker">Langkah 2</span>
+                                <h3>Hasil pratinjau</h3>
+                                <p className="muted">
+                                    <FileSpreadsheet size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> Jumlah
+                                    entri: <span className="strong">{activePreview.entries ?? 0}</span>
+                                </p>
+                            </div>
                         </div>
 
                         {activePreview.errors?.length ? (
-                            <div className="bg-red-50 border border-red-200 rounded p-3">
-                                <p className="text-sm font-medium text-red-700 mb-1">
-                                    Baris bermasalah ({activePreview.errors.length}):
+                            <div className="toast toast--error" role="alert" style={{ display: 'block' }}>
+                                <p className="strong" style={{ margin: 0 }}>
+                                    <AlertTriangle size={16} aria-hidden style={{ verticalAlign: '-3px' }} /> Baris
+                                    bermasalah ({activePreview.errors.length})
                                 </p>
-                                <ul className="text-xs text-red-600 list-disc pl-5 space-y-1">
+                                <ul className="small" style={{ margin: '8px 0 0 18px' }}>
                                     {activePreview.errors.map((e, i) => (
-                                        <li key={i}>{e.row ? `Baris ${e.row}: ` : ''}{e.message}</li>
+                                        <li key={i}>
+                                            {e.row ? `Baris ${e.row}: ` : ''}
+                                            {e.message}
+                                        </li>
                                     ))}
                                 </ul>
-                                <p className="text-xs text-red-500 mt-2">
+                                <p className="small" style={{ marginTop: 8 }}>
                                     Perbaiki berkas lalu unggah ulang. Tidak ada data yang disimpan.
                                 </p>
                             </div>
                         ) : (
-                            <div className="bg-green-50 border border-green-200 rounded p-3 text-sm text-green-700">
-                                Tidak ada baris bermasalah. {activePreview.entries} entri siap dikirim.
+                            <div className="toast toast--ok" role="status">
+                                <CheckCircle2 size={20} aria-hidden />
+                                <span>
+                                    Tidak ada baris bermasalah. {activePreview.entries ?? 0} entri siap dikirim.
+                                </span>
                             </div>
                         )}
 
                         {!activePreview.errors?.length && activePreview.token ? (
-                            <PrimaryButton onClick={() => handleCommit(activePreview.token!)}>
-                                3. Kirim (buat tagihan)
-                            </PrimaryButton>
+                            <div className="row-gap" style={{ marginTop: 18 }}>
+                                <button
+                                    type="button"
+                                    className="btn btn--clay"
+                                    onClick={() => setConfirmToken(activePreview.token ?? null)}
+                                >
+                                    <Send size={18} aria-hidden />
+                                    Langkah 3: Kirim &amp; buat tagihan
+                                </button>
+                            </div>
                         ) : null}
-                    </div>
+                    </section>
                 ) : null}
             </div>
+
+            <ConfirmDialog
+                show={confirmToken !== null}
+                title="Kirim pendaftaran kolektif?"
+                message={
+                    <p>
+                        {activePreview?.entries ?? 0} entri akan dibuat dan satu tagihan diterbitkan untuk dibayar.
+                        Periksa kembali hasil pratinjau sebelum melanjutkan.
+                    </p>
+                }
+                confirmLabel="Ya, kirim"
+                onConfirm={() => {
+                    if (confirmToken) {
+                        handleCommit(confirmToken);
+                    }
+                }}
+                onCancel={() => setConfirmToken(null)}
+            />
         </AuthenticatedLayout>
     );
 }

@@ -1,9 +1,7 @@
-import { Head, useForm } from '@inertiajs/react';
+import Field from '@/Components/app/Field';
+import FlashMessage from '@/Components/app/FlashMessage';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import InputLabel from '@/Components/InputLabel';
-import InputError from '@/Components/InputError';
+import { Head, useForm } from '@inertiajs/react';
 
 interface SettingsData {
     event_name: string;
@@ -14,11 +12,7 @@ interface SettingsData {
     import_max_rows: number;
 }
 
-interface Props {
-    settings: SettingsData;
-}
-
-export default function Edit({ settings }: Props) {
+export default function Edit({ settings }: { settings: SettingsData }) {
     const { data, setData, put, processing, errors } = useForm({
         event_name: settings.event_name,
         contact_whatsapp: settings.contact_whatsapp,
@@ -34,89 +28,122 @@ export default function Edit({ settings }: Props) {
     };
 
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Pengaturan</h1>}>
+        <AuthenticatedLayout
+            header={
+                <div>
+                    <span className="kicker">Panitia</span>
+                    <h1>Pengaturan Acara</h1>
+                </div>
+            }
+        >
             <Head title="Pengaturan" />
 
-            <div className="max-w-2xl mx-auto p-4">
-                <form onSubmit={submit} className="space-y-4">
-                    <div>
-                        <InputLabel htmlFor="event_name">Nama Acara</InputLabel>
-                        <TextInput
+            <FlashMessage />
+
+            <form onSubmit={submit} className="panel stack" style={{ maxWidth: 680 }}>
+                <fieldset className="fieldset">
+                    <legend>Identitas acara</legend>
+
+                    <Field label="Nama acara" htmlFor="event_name" error={errors.event_name} required>
+                        <input
                             id="event_name"
                             type="text"
-                            className="w-full"
+                            className="input"
                             value={data.event_name}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setData('event_name', e.target.value)}
+                            onChange={(e) => setData('event_name', e.target.value)}
+                            aria-invalid={Boolean(errors.event_name)}
                         />
-                        <InputError message={errors.event_name} className="mt-2" />
-                    </div>
+                    </Field>
 
-                    <div>
-                        <InputLabel htmlFor="contact_whatsapp">WhatsApp Panitia</InputLabel>
-                        <TextInput
+                    <Field
+                        label="WhatsApp panitia"
+                        htmlFor="contact_whatsapp"
+                        error={errors.contact_whatsapp}
+                        hint="Format: 62xxxxxxxxxx"
+                        required
+                    >
+                        <input
                             id="contact_whatsapp"
                             type="text"
-                            className="w-full"
+                            className="input"
                             value={data.contact_whatsapp}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setData('contact_whatsapp', e.target.value)}
+                            onChange={(e) => setData('contact_whatsapp', e.target.value)}
+                            aria-invalid={Boolean(errors.contact_whatsapp)}
                         />
-                        <p className="text-xs text-gray-500 mt-1">Format: 62xxxxxxxxxx</p>
-                        <InputError message={errors.contact_whatsapp} className="mt-2" />
-                    </div>
+                    </Field>
 
-                    <div>
-                        <InputLabel htmlFor="contact_email">Email Panitia</InputLabel>
-                        <TextInput
+                    <Field label="Email panitia" htmlFor="contact_email" error={errors.contact_email} required>
+                        <input
                             id="contact_email"
                             type="email"
-                            className="w-full"
+                            className="input"
                             value={data.contact_email}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setData('contact_email', e.target.value)}
+                            onChange={(e) => setData('contact_email', e.target.value)}
+                            aria-invalid={Boolean(errors.contact_email)}
                         />
-                        <InputError message={errors.contact_email} className="mt-2" />
-                    </div>
+                    </Field>
+                </fieldset>
 
-                    <div>
-                        <InputLabel htmlFor="payment_due_hours">Batas Bayar (jam)</InputLabel>
-                        <TextInput
+                <fieldset className="fieldset">
+                    <legend>Aturan pendaftaran</legend>
+
+                    <Field
+                        label="Batas waktu pembayaran (jam)"
+                        htmlFor="payment_due_hours"
+                        error={errors.payment_due_hours}
+                        hint="1–720 jam sejak tagihan dibuat"
+                        required
+                    >
+                        <input
                             id="payment_due_hours"
                             type="number"
-                            className="w-full"
+                            className="input"
                             value={data.payment_due_hours}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setData('payment_due_hours', Number(e.target.value))}
+                            onChange={(e) => setData('payment_due_hours', Number(e.target.value))}
+                            aria-invalid={Boolean(errors.payment_due_hours)}
                         />
-                        <p className="text-xs text-gray-500 mt-1">1–720 jam</p>
-                        <InputError message={errors.payment_due_hours} className="mt-2" />
-                    </div>
+                    </Field>
 
-                    <div>
-                        <InputLabel htmlFor="max_competitions_per_participant">Maks. Lomba per Peserta</InputLabel>
-                        <TextInput
+                    <Field
+                        label="Maksimal lomba per peserta"
+                        htmlFor="max_competitions_per_participant"
+                        error={errors.max_competitions_per_participant}
+                        hint="Kosongkan bila tanpa batas"
+                    >
+                        <input
                             id="max_competitions_per_participant"
                             type="number"
-                            className="w-full"
+                            className="input"
                             value={data.max_competitions_per_participant}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setData('max_competitions_per_participant', e.target.value)}
+                            onChange={(e) => setData('max_competitions_per_participant', e.target.value)}
+                            aria-invalid={Boolean(errors.max_competitions_per_participant)}
                         />
-                        <p className="text-xs text-gray-500 mt-1">Kosongkan untuk tanpa batas</p>
-                        <InputError message={errors.max_competitions_per_participant} className="mt-2" />
-                    </div>
+                    </Field>
 
-                    <div>
-                        <InputLabel htmlFor="import_max_rows">Maks. Baris Impor</InputLabel>
-                        <TextInput
+                    <Field
+                        label="Maksimal baris impor"
+                        htmlFor="import_max_rows"
+                        error={errors.import_max_rows}
+                        hint="Batas jumlah baris saat pendaftaran kolektif"
+                        required
+                    >
+                        <input
                             id="import_max_rows"
                             type="number"
-                            className="w-full"
+                            className="input"
                             value={data.import_max_rows}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setData('import_max_rows', Number(e.target.value))}
+                            onChange={(e) => setData('import_max_rows', Number(e.target.value))}
+                            aria-invalid={Boolean(errors.import_max_rows)}
                         />
-                        <InputError message={errors.import_max_rows} className="mt-2" />
-                    </div>
+                    </Field>
+                </fieldset>
 
-                    <PrimaryButton disabled={processing}>Simpan Pengaturan</PrimaryButton>
-                </form>
-            </div>
+                <div>
+                    <button type="submit" className="btn btn--clay" disabled={processing}>
+                        {processing ? 'Menyimpan…' : 'Simpan pengaturan'}
+                    </button>
+                </div>
+            </form>
         </AuthenticatedLayout>
     );
 }

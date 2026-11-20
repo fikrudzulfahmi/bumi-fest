@@ -1,9 +1,9 @@
-import { Head, useForm } from '@inertiajs/react';
+import Field from '@/Components/app/Field';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import InputLabel from '@/Components/InputLabel';
-import InputError from '@/Components/InputError';
+import { formatRupiah } from '@/lib/format';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, CheckCircle2, Users } from 'lucide-react';
 
 interface Competition {
     id: number;
@@ -73,83 +73,131 @@ export default function Create({ competition, participants, draft, level }: Prop
 
     if (participants.length === 0) {
         return (
-            <AuthenticatedLayout header={<h1 className="text-2xl font-bold">{competition.name}</h1>}>
+            <AuthenticatedLayout header={<h1>{competition.name}</h1>}>
                 <Head title="Daftar" />
-                <div className="max-w-2xl mx-auto p-4">
-                    <p className="text-gray-600">
-                        Belum ada siswa dengan jenjang {level === 'sd_mi' ? 'SD/MI' : 'SMP/MTs'}. Tambahkan siswa terlebih dahulu di /siswa.
-                    </p>
+
+                <FlashMessage />
+
+                <div className="panel">
+                    <EmptyState
+                        title="Belum ada siswa terdaftar"
+                        description={`Belum ada siswa dengan jenjang ${
+                            level === 'sd_mi' ? 'SD/MI' : 'SMP/MTs'
+                        }. Tambahkan siswa terlebih dahulu, lalu kembali ke halaman ini.`}
+                        action={
+                            <Link className="btn btn--sm" href={route('participants.index')}>
+                                <Users size={16} aria-hidden />
+                                Tambah siswa
+                            </Link>
+                        }
+                    />
                 </div>
             </AuthenticatedLayout>
         );
     }
 
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Daftar: {competition.name}</h1>}>
+        <AuthenticatedLayout header={<h1>Daftar: {competition.name}</h1>}>
             <Head title="Daftar Lomba" />
 
-            <div className="max-w-2xl mx-auto p-4">
-                <form onSubmit={submit} className="space-y-4">
-                    {isTeam && (
-                        <div>
-                            <InputLabel htmlFor="team_name">Nama Tim</InputLabel>
-                            <TextInput
-                                id="team_name"
-                                type="text"
-                                className="w-full"
-                                value={data.team_name}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setData('team_name', e.target.value)}
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                                Jumlah anggota: {competition.team_min}–{competition.team_max} siswa
-                            </p>
-                            <InputError message={errors.team_name} className="mt-2" />
-                        </div>
-                    )}
+            <FlashMessage />
 
-                    <div>
-                        <InputLabel>
-                            Pilih Siswa {isTeam ? `(pilih ${competition.team_min}–${competition.team_max})` : '(pilih 1)'}
-                        </InputLabel>
-                        <div className="space-y-1 max-h-64 overflow-y-auto border border-gray-200 rounded p-2">
-                            {participants.map((p) => (
-                                <label key={p.id} className="flex items-center gap-2">
-                                    <input
-                                        type={isTeam ? 'checkbox' : 'radio'}
-                                        name="participant_ids"
-                                        checked={data.participant_ids.includes(p.id)}
-                                        onChange={() => toggleMember(p.id)}
-                                        className="rounded"
-                                    />
-                                    <span className="text-sm">
-                                        {p.name} — Kelas {p.grade}, {p.school_name}
-                                    </span>
-                                </label>
-                            ))}
+            <div className="stack">
+                <div className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Formulir pendaftaran</span>
+                            <h2>{competition.name}</h2>
+                            <p className="muted">
+                                {isTeam ? 'Lomba beregu' : 'Lomba individu'} · biaya {formatRupiah(competition.fee)}
+                                {competition.quota !== null ? ` · kuota ${competition.quota}` : ''}
+                            </p>
                         </div>
-                        <InputError message={errors.participant_ids} className="mt-2" />
+                        <Link className="btn btn--ghost btn--sm" href={route('portal.level', level)}>
+                            <ArrowLeft size={16} aria-hidden />
+                            Kembali ke portal
+                        </Link>
                     </div>
 
-                    <div>
-                        <label className="flex items-center gap-2">
+                    <form onSubmit={submit}>
+                        {isTeam && (
+                            <Field
+                                label="Nama Tim"
+                                htmlFor="team_name"
+                                error={errors.team_name}
+                                hint={`Jumlah anggota ${competition.team_min}–${competition.team_max} siswa.`}
+                                required
+                            >
+                                <input
+                                    id="team_name"
+                                    type="text"
+                                    name="team_name"
+                                    className="input"
+                                    value={data.team_name}
+                                    onChange={(e) => setData('team_name', e.target.value)}
+                                />
+                            </Field>
+                        )}
+
+                        <fieldset className="fieldset">
+                            <legend>
+                                Pilih Siswa {isTeam ? `(${competition.team_min}–${competition.team_max} siswa)` : '(pilih 1 siswa)'}
+                            </legend>
+
+                            <div className="stack-sm" style={{ maxHeight: 320, overflowY: 'auto' }}>
+                                {participants.map((p) => (
+                                    <label key={p.id} className="check">
+                                        <input
+                                            type={isTeam ? 'checkbox' : 'radio'}
+                                            name="participant_ids"
+                                            checked={data.participant_ids.includes(p.id)}
+                                            onChange={() => toggleMember(p.id)}
+                                        />
+                                        <span>
+                                            {p.name}
+                                            <span className="small muted" style={{ display: 'block' }}>
+                                                Kelas {p.grade} · {p.school_name}
+                                            </span>
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+
+                            {errors.participant_ids && (
+                                <p className="error" role="alert">
+                                    {errors.participant_ids}
+                                </p>
+                            )}
+                        </fieldset>
+
+                        <label className="check">
                             <input
                                 type="checkbox"
                                 checked={data.consent}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setData('consent', e.target.checked)}
-                                className="rounded"
+                                onChange={(e) => setData('consent', e.target.checked)}
                             />
-                            <span className="text-sm">
-                                Saya menyetujui persyaratan lomba, juknis, dan kebijakan privasi.
-                            </span>
+                            <span>Saya menyetujui persyaratan lomba, juknis, dan kebijakan privasi.</span>
                         </label>
-                        <InputError message={errors.consent} className="mt-2" />
-                    </div>
+                        {errors.consent && (
+                            <p className="error" role="alert">
+                                {errors.consent}
+                            </p>
+                        )}
 
-                    <div className="flex items-center gap-4">
-                        <PrimaryButton disabled={processing}>Simpan Draf</PrimaryButton>
-                        <span className="text-sm text-gray-600">Biaya: Rp {competition.fee.toLocaleString('id-ID')}</span>
-                    </div>
-                </form>
+                        <div className="divider" />
+
+                        <div className="row-between">
+                            <p className="small muted" style={{ margin: 0 }}>
+                                Biaya pendaftaran <span className="strong">{formatRupiah(competition.fee)}</span> akan
+                                ditagihkan setelah draf dikirim.
+                            </p>
+                            <button type="submit" className="btn btn--clay" disabled={processing}>
+                                <CheckCircle2 size={18} aria-hidden />
+                                {processing ? 'Menyimpan…' : 'Simpan Draf'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </AuthenticatedLayout>
     );

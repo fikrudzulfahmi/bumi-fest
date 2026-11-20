@@ -1,19 +1,9 @@
-import Checkbox from '@/Components/Checkbox';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Field from '@/Components/app/Field';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
-export default function Login({
-    status,
-    canResetPassword,
-}: {
-    status?: string;
-    canResetPassword: boolean;
-}) {
+export default function Login({ status, canResetPassword }: { status?: string; canResetPassword: boolean }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -22,88 +12,78 @@ export default function Login({
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-
-        post(route('login'), {
-            onFinish: () => reset('password'),
-        });
+        post(route('login'), { onFinish: () => reset('password') });
     };
 
     return (
         <GuestLayout>
             <Head title="Masuk" />
 
+            <h1 className="auth__title">Masuk</h1>
+            <p className="auth__sub muted">Gunakan akun peserta, juri, atau panitia Anda.</p>
+
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
+                <div className="toast toast--ok" role="status" style={{ marginTop: 16 }}>
                     {status}
                 </div>
             )}
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
+            <form onSubmit={submit} style={{ marginTop: 20 }}>
+                <Field label="Email" htmlFor="email" error={errors.email} required>
+                    <input
                         id="email"
                         type="email"
                         name="email"
+                        className="input"
                         value={data.email}
-                        className="mt-1 block w-full"
                         autoComplete="username"
-                        isFocused={true}
+                        autoFocus
+                        aria-invalid={Boolean(errors.email)}
                         onChange={(e) => setData('email', e.target.value)}
                     />
+                </Field>
 
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Kata Sandi" />
-
-                    <TextInput
+                <Field label="Kata sandi" htmlFor="password" error={errors.password} required>
+                    <input
                         id="password"
                         type="password"
                         name="password"
+                        className="input"
                         value={data.password}
-                        className="mt-1 block w-full"
                         autoComplete="current-password"
+                        aria-invalid={Boolean(errors.password)}
                         onChange={(e) => setData('password', e.target.value)}
                     />
+                </Field>
 
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
+                <label className="check">
+                    <input
+                        type="checkbox"
+                        name="remember"
+                        checked={data.remember}
+                        onChange={(e) => setData('remember', e.target.checked as false)}
+                    />
+                    <span>Ingat saya</span>
+                </label>
 
-                <div className="mt-4 block">
-                    <label className="flex items-center">
-                        <Checkbox
-                            name="remember"
-                            checked={data.remember}
-                            onChange={(e) =>
-                                setData(
-                                    'remember',
-                                    (e.target.checked || false) as false,
-                                )
-                            }
-                        />
-                        <span className="ms-2 text-sm text-gray-600">
-                            Ingat saya
-                        </span>
-                    </label>
-                </div>
+                <button type="submit" className="btn btn--clay btn--block" style={{ marginTop: 16 }} disabled={processing}>
+                    {processing ? 'Memproses…' : 'Masuk'}
+                </button>
 
-                <div className="mt-4 flex items-center justify-end">
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                        >
+                {canResetPassword && (
+                    <p className="auth__foot" style={{ borderTop: 0, paddingTop: 0, marginTop: 14 }}>
+                        <Link href={route('password.request')} style={{ fontWeight: 600 }}>
                             Lupa kata sandi?
                         </Link>
-                    )}
+                    </p>
+                )}
 
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Masuk
-                    </PrimaryButton>
-                </div>
+                <p className="auth__foot" style={{ borderTop: 0, paddingTop: 0 }}>
+                    Belum punya akun?{' '}
+                    <Link href={route('register')} style={{ fontWeight: 700 }}>
+                        Daftar di sini
+                    </Link>
+                </p>
             </form>
         </GuestLayout>
     );

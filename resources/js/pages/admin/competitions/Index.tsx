@@ -1,6 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
+import { Head, Link } from '@inertiajs/react';
+import { BarChart3, ListChecks, Plus, Settings2 } from 'lucide-react';
 
 interface Competition {
     id: number;
@@ -15,54 +17,92 @@ interface Competition {
 interface Props {
     competitions: {
         data: Competition[];
-        meta: {
-            total: number;
-            per_page: number;
-            current_page: number;
-        };
+        meta?: { total: number; per_page: number; current_page: number };
+        total?: number;
     };
     filters: Record<string, string | null>;
     levels: Array<{ value: string; label: string }>;
 }
 
-export default function Index({ competitions, filters, levels }: Props) {
+export default function Index({ competitions }: Props) {
+    const rows = competitions.data ?? [];
+
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Kelola Lomba</h1>}>
+        <AuthenticatedLayout
+            header={
+                <div>
+                    <span className="kicker">Panitia</span>
+                    <h1>Kelola Lomba</h1>
+                </div>
+            }
+        >
             <Head title="Kelola Lomba" />
 
-            <div className="max-w-7xl mx-auto p-4">
-                <div className="mb-6">
-                    <Link href={route('admin.competitions.create')}>
-                        <PrimaryButton>Buat Lomba Baru</PrimaryButton>
-                    </Link>
-                </div>
+            <FlashMessage />
 
-                <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-200">
+            <div className="row-between">
+                <p className="muted" style={{ fontSize: 15 }}>
+                    {competitions.total ?? rows.length} lomba terdaftar.
+                </p>
+                <Link href={route('admin.competitions.create')} className="btn btn--clay btn--sm">
+                    <Plus size={16} aria-hidden />
+                    Buat lomba baru
+                </Link>
+            </div>
+
+            {rows.length === 0 ? (
+                <EmptyState
+                    title="Belum ada lomba"
+                    description="Buat cabang lomba pertama untuk membuka pendaftaran."
+                    action={
+                        <Link href={route('admin.competitions.create')} className="btn btn--sm">
+                            Buat lomba baru
+                        </Link>
+                    }
+                />
+            ) : (
+                <div className="table-wrap">
+                    <table className="data">
                         <thead>
-                            <tr className="bg-gray-100">
-                                <th className="px-4 py-2 text-left">Nama</th>
-                                <th className="px-4 py-2 text-left">Jenjang</th>
-                                <th className="px-4 py-2 text-left">Status</th>
-                                <th className="px-4 py-2 text-left">Aksi</th>
+                            <tr>
+                                <th>Nama lomba</th>
+                                <th>Jenjang</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {competitions.data?.map((comp) => (
-                                <tr key={comp.id} className="border-t">
-                                    <td className="px-4 py-2">{comp.name}</td>
-                                    <td className="px-4 py-2">{comp.level_label}</td>
-                                    <td className="px-4 py-2">{comp.status_label}</td>
-                                    <td className="px-4 py-2">
-                                        <div className="flex gap-3">
-                                            <Link href={route('admin.competitions.show', comp.id)}>
-                                                <button className="text-blue-600 hover:underline">Lihat</button>
+                            {rows.map((comp) => (
+                                <tr key={comp.id}>
+                                    <td data-label="Nama lomba" className="strong">
+                                        {comp.name}
+                                    </td>
+                                    <td data-label="Jenjang">{comp.level_label}</td>
+                                    <td data-label="Status">
+                                        <StatusBadge value={comp.status} label={comp.status_label} />
+                                    </td>
+                                    <td data-label="Aksi">
+                                        <div className="row-gap" style={{ gap: 8 }}>
+                                            <Link
+                                                href={route('admin.competitions.show', comp.id)}
+                                                className="btn btn--ghost btn--sm"
+                                            >
+                                                <Settings2 size={15} aria-hidden />
+                                                Detail
                                             </Link>
-                                            <Link href={route('admin.rubrics.edit', comp.id)}>
-                                                <button className="text-blue-600 hover:underline">Rubrik</button>
+                                            <Link
+                                                href={route('admin.rubrics.edit', comp.id)}
+                                                className="btn btn--ghost btn--sm"
+                                            >
+                                                <ListChecks size={15} aria-hidden />
+                                                Rubrik
                                             </Link>
-                                            <Link href={route('admin.results.index', comp.id)}>
-                                                <button className="text-blue-600 hover:underline">Hasil</button>
+                                            <Link
+                                                href={route('admin.results.index', comp.id)}
+                                                className="btn btn--ghost btn--sm"
+                                            >
+                                                <BarChart3 size={15} aria-hidden />
+                                                Hasil
                                             </Link>
                                         </div>
                                     </td>
@@ -71,7 +111,7 @@ export default function Index({ competitions, filters, levels }: Props) {
                         </tbody>
                     </table>
                 </div>
-            </div>
+            )}
         </AuthenticatedLayout>
     );
 }

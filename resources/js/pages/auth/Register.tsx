@@ -1,9 +1,7 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Field from '@/Components/app/Field';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { Building2, UserRound } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 export default function Register() {
@@ -41,241 +39,232 @@ export default function Register() {
         <GuestLayout>
             <Head title="Daftar Akun" />
 
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                    Daftar Akun Bumifest
-                </h1>
+            <h1 className="auth__title">Daftar Akun</h1>
+            <p className="auth__sub muted">
+                Ikuti Bumifest sebagai peserta individu atau mewakili lembaga/sekolah.
+            </p>
 
-                {/* Type Selection */}
-                <div className="flex gap-4 mb-6">
-                    <label className="flex items-center">
-                        <input
-                            type="radio"
-                            name="type"
-                            value="participant"
-                            checked={type === 'participant'}
-                            onChange={() => handleTypeChange('participant')}
-                            className="w-4 h-4"
-                        />
-                        <span className="ml-2 text-gray-700">Peserta Individu</span>
-                    </label>
+            <form onSubmit={submit} style={{ marginTop: 20 }}>
+                <fieldset className="fieldset">
+                    <legend>Jenis akun</legend>
 
-                    <label className="flex items-center">
-                        <input
-                            type="radio"
-                            name="type"
-                            value="institution"
-                            checked={type === 'institution'}
-                            onChange={() => handleTypeChange('institution')}
-                            className="w-4 h-4"
-                        />
-                        <span className="ml-2 text-gray-700">Lembaga / Sekolah</span>
-                    </label>
-                </div>
-            </div>
+                    <div className="stack-sm">
+                        <label className="check">
+                            <input
+                                type="radio"
+                                name="type"
+                                value="participant"
+                                checked={type === 'participant'}
+                                onChange={() => handleTypeChange('participant')}
+                            />
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                <UserRound size={18} aria-hidden />
+                                Peserta Individu
+                            </span>
+                        </label>
 
-            <form onSubmit={submit}>
-                {/* Nama */}
-                <div>
-                    <InputLabel
-                        htmlFor="name"
-                        value={type === 'participant' ? 'Nama Lengkap' : 'Nama Pengguna'}
-                    />
+                        <label className="check">
+                            <input
+                                type="radio"
+                                name="type"
+                                value="institution"
+                                checked={type === 'institution'}
+                                onChange={() => handleTypeChange('institution')}
+                            />
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                <Building2 size={18} aria-hidden />
+                                Lembaga / Sekolah
+                            </span>
+                        </label>
+                    </div>
 
-                    <TextInput
+                    {errors.type && (
+                        <p className="error" role="alert" style={{ marginTop: 8 }}>
+                            {errors.type}
+                        </p>
+                    )}
+                </fieldset>
+
+                <Field
+                    label={type === 'participant' ? 'Nama lengkap' : 'Nama pengguna'}
+                    htmlFor="name"
+                    error={errors.name}
+                    hint={
+                        type === 'participant'
+                            ? 'Tulis nama sesuai kartu identitas.'
+                            : 'Nama penanggung jawab pendaftaran lembaga.'
+                    }
+                    required
+                >
+                    <input
                         id="name"
                         name="name"
+                        className="input"
                         value={data.name}
-                        className="mt-1 block w-full"
                         autoComplete="name"
-                        isFocused={true}
+                        autoFocus
+                        aria-invalid={Boolean(errors.name)}
                         onChange={(e) => setData('name', e.target.value)}
-                        required
                     />
+                </Field>
 
-                    <InputError message={errors.name} className="mt-2" />
-                </div>
-
-                {/* Email */}
-                <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
+                <Field
+                    label="Email"
+                    htmlFor="email"
+                    error={errors.email}
+                    hint="Tautan verifikasi akun dikirim ke alamat ini."
+                    required
+                >
+                    <input
                         id="email"
                         type="email"
                         name="email"
+                        className="input"
                         value={data.email}
-                        className="mt-1 block w-full"
                         autoComplete="username"
+                        aria-invalid={Boolean(errors.email)}
                         onChange={(e) => setData('email', e.target.value)}
-                        required
                     />
+                </Field>
 
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
-
-                {/* WhatsApp */}
-                <div className="mt-4">
-                    <InputLabel htmlFor="whatsapp" value="Nomor WhatsApp" />
-
-                    <TextInput
+                <Field
+                    label="Nomor WhatsApp"
+                    htmlFor="whatsapp"
+                    error={errors.whatsapp}
+                    hint="Contoh: 0812-3456-7890 atau +62812-3456-7890."
+                    required
+                >
+                    <input
                         id="whatsapp"
                         type="tel"
                         name="whatsapp"
-                        placeholder="Contoh: 0812-3456-7890 atau +62812-3456-7890"
+                        className="input"
+                        placeholder="0812-3456-7890"
                         value={data.whatsapp}
-                        className="mt-1 block w-full"
+                        autoComplete="tel"
+                        aria-invalid={Boolean(errors.whatsapp)}
                         onChange={(e) => setData('whatsapp', e.target.value)}
-                        required
                     />
+                </Field>
 
-                    <InputError message={errors.whatsapp} className="mt-2" />
-                </div>
-
-                {/* Conditional: Institution fields */}
                 {type === 'institution' && (
-                    <>
-                        <div className="mt-4">
-                            <InputLabel htmlFor="institution_name" value="Nama Sekolah" />
+                    <fieldset className="fieldset">
+                        <legend>Data lembaga</legend>
 
-                            <TextInput
+                        <Field label="Nama sekolah" htmlFor="institution_name" error={errors.institution_name} required>
+                            <input
                                 id="institution_name"
                                 name="institution_name"
+                                className="input"
                                 value={data.institution_name}
-                                className="mt-1 block w-full"
-                                onChange={(e) =>
-                                    setData('institution_name', e.target.value)
-                                }
-                                required={type === 'institution'}
+                                aria-invalid={Boolean(errors.institution_name)}
+                                onChange={(e) => setData('institution_name', e.target.value)}
                             />
+                        </Field>
 
-                            <InputError
-                                message={errors.institution_name}
-                                className="mt-2"
-                            />
-                        </div>
-
-                        <div className="mt-4">
-                            <InputLabel htmlFor="npsn" value="NPSN (8 digit)" />
-
-                            <TextInput
+                        <Field label="NPSN" htmlFor="npsn" error={errors.npsn} hint="8 digit nomor pokok sekolah nasional." required>
+                            <input
                                 id="npsn"
                                 type="text"
                                 name="npsn"
+                                className="input tnum"
                                 maxLength={8}
-                                placeholder="Contoh: 20123456"
+                                placeholder="20123456"
                                 value={data.npsn}
-                                className="mt-1 block w-full"
+                                aria-invalid={Boolean(errors.npsn)}
                                 onChange={(e) => setData('npsn', e.target.value)}
-                                required={type === 'institution'}
                             />
+                        </Field>
 
-                            <InputError message={errors.npsn} className="mt-2" />
-                        </div>
-
-                        <div className="mt-4">
-                            <InputLabel htmlFor="city" value="Kota" />
-
-                            <TextInput
+                        <Field label="Kota" htmlFor="city" error={errors.city} required>
+                            <input
                                 id="city"
                                 name="city"
+                                className="input"
                                 value={data.city}
-                                className="mt-1 block w-full"
+                                aria-invalid={Boolean(errors.city)}
                                 onChange={(e) => setData('city', e.target.value)}
-                                required={type === 'institution'}
                             />
-
-                            <InputError message={errors.city} className="mt-2" />
-                        </div>
-                    </>
+                        </Field>
+                    </fieldset>
                 )}
 
-                {/* Password */}
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Kata Sandi" />
-
-                    <TextInput
+                <Field
+                    label="Kata sandi"
+                    htmlFor="password"
+                    error={errors.password}
+                    hint="Minimal 8 karakter."
+                    required
+                >
+                    <input
                         id="password"
                         type="password"
                         name="password"
+                        className="input"
                         value={data.password}
-                        className="mt-1 block w-full"
                         autoComplete="new-password"
+                        aria-invalid={Boolean(errors.password)}
                         onChange={(e) => setData('password', e.target.value)}
-                        required
                     />
+                </Field>
 
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                {/* Confirm Password */}
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Konfirmasi Kata Sandi"
-                    />
-
-                    <TextInput
+                <Field
+                    label="Ulangi kata sandi"
+                    htmlFor="password_confirmation"
+                    error={errors.password_confirmation}
+                    required
+                >
+                    <input
                         id="password_confirmation"
                         type="password"
                         name="password_confirmation"
+                        className="input"
                         value={data.password_confirmation}
-                        className="mt-1 block w-full"
                         autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
-                        required
+                        aria-invalid={Boolean(errors.password_confirmation)}
+                        onChange={(e) => setData('password_confirmation', e.target.value)}
                     />
+                </Field>
 
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
-                </div>
-
-                {/* Privacy Consent */}
-                <div className="mt-6">
-                    <label className="flex items-start">
+                <div className="stack-sm" style={{ marginBottom: 16 }}>
+                    <label className="check">
                         <input
                             type="checkbox"
                             name="privacy_consent"
                             checked={data.privacy_consent}
-                            onChange={(e) =>
-                                setData('privacy_consent', e.target.checked)
-                            }
-                            className="mt-1 w-4 h-4"
+                            onChange={(e) => setData('privacy_consent', e.target.checked)}
                             required
                         />
-
-                        <span className="ml-3 text-sm text-gray-700">
-                            Saya setuju dengan{' '}
-                            <a href="#" className="text-blue-600 hover:underline">
+                        <span>
+                            Saya menyetujui{' '}
+                            <a href="#" style={{ fontWeight: 600, textDecoration: 'underline' }}>
                                 Kebijakan Privasi
                             </a>{' '}
                             dan{' '}
-                            <a href="#" className="text-blue-600 hover:underline">
-                                Syarat & Ketentuan
-                            </a>
+                            <a href="#" style={{ fontWeight: 600, textDecoration: 'underline' }}>
+                                Syarat &amp; Ketentuan
+                            </a>{' '}
+                            Bumifest.
                         </span>
                     </label>
 
-                    <InputError message={errors.privacy_consent} className="mt-2" />
+                    {errors.privacy_consent && (
+                        <p className="error" role="alert">
+                            {errors.privacy_consent}
+                        </p>
+                    )}
                 </div>
 
-                {/* Submit */}
-                <div className="mt-6 flex items-center justify-between">
-                    <Link
-                        href={route('login')}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                        Sudah punya akun?
+                <button type="submit" className="btn btn--clay btn--block" disabled={processing}>
+                    {processing ? 'Memproses…' : 'Daftar'}
+                </button>
+
+                <p className="auth__foot">
+                    Sudah punya akun?{' '}
+                    <Link href={route('login')} style={{ fontWeight: 700 }}>
+                        Masuk di sini
                     </Link>
-
-                    <PrimaryButton disabled={processing}>
-                        Daftar
-                    </PrimaryButton>
-                </div>
+                </p>
             </form>
         </GuestLayout>
     );

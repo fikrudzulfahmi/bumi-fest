@@ -1,11 +1,13 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import ConfirmDialog from '@/Components/app/ConfirmDialog';
+import Field from '@/Components/app/Field';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import Modal from '@/Components/app/Modal';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Modal from '@/Components/Modal';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
-import DangerButton from '@/Components/DangerButton';
 import { formatRupiah, formatTanggalWaktu } from '@/lib/format';
+import { Head, Link, router } from '@inertiajs/react';
+import { CalendarClock, Check, Download, ExternalLink, Image as ImageIcon, SlidersHorizontal, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface Invoice {
     id: number;
@@ -38,20 +40,11 @@ interface Props {
     counts: { awaiting: number; paid: number; rejected: number };
 }
 
-const badge: Record<string, string> = {
-    red: 'bg-red-50 text-red-700 ring-red-200',
-    blue: 'bg-blue-50 text-blue-700 ring-blue-200',
-    orange: 'bg-orange-50 text-orange-700 ring-orange-200',
-    green: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-    gray: 'bg-gray-100 text-gray-600 ring-gray-200',
-    slate: 'bg-slate-100 text-slate-600 ring-slate-200',
-};
-
 export default function Index({ invoices, filters, levels, competitions, counts }: Props) {
-    const flash = (usePage().props as { flash?: { success?: string; error?: string } }).flash;
     const [preview, setPreview] = useState<Invoice | null>(null);
     const [rejecting, setRejecting] = useState<Invoice | null>(null);
     const [extending, setExtending] = useState<Invoice | null>(null);
+    const [accepting, setAccepting] = useState<Invoice | null>(null);
     const [reason, setReason] = useState('');
     const [hours, setHours] = useState('24');
     const [busy, setBusy] = useState(false);
@@ -80,6 +73,7 @@ export default function Index({ invoices, filters, levels, competitions, counts 
             {},
             {
                 preserveScroll: true,
+                onSuccess: () => setAccepting(null),
                 onFinish: () => setBusy(false),
             },
         );
@@ -133,43 +127,71 @@ export default function Index({ invoices, filters, levels, competitions, counts 
     };
 
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Verifikasi Pembayaran</h1>}>
+        <AuthenticatedLayout
+            header={
+                <div>
+                    <span className="kicker">Panitia</span>
+                    <h1>Verifikasi Pembayaran</h1>
+                </div>
+            }
+        >
             <Head title="Verifikasi Pembayaran" />
 
-            <div className="mx-auto max-w-6xl space-y-4 p-4">
-                {flash?.success && (
-                    <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">
-                        {flash.error}
-                    </div>
-                )}
+            <FlashMessage />
 
-                <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded border border-gray-200 p-3">
-                        <p className="text-xs text-gray-500">Menunggu verifikasi</p>
-                        <p className="text-xl font-semibold">{counts.awaiting}</p>
+            <div className="row-between">
+                <p className="muted" style={{ fontSize: 15 }}>
+                    Periksa bukti transfer, lalu terima atau tolak tagihan peserta.
+                </p>
+                <a href={exportUrl()} className="btn btn--ghost btn--sm">
+                    <Download size={16} aria-hidden />
+                    Ekspor
+                </a>
+            </div>
+
+            <div className="stat-grid">
+                <div className="stat">
+                    <b>{counts.awaiting}</b>
+                    <span>Menunggu verifikasi</span>
+                    <small className="muted">perlu ditinjau</small>
+                </div>
+                <div className="stat">
+                    <b>{counts.paid}</b>
+                    <span>Terbayar</span>
+                    <small className="muted">sudah diterima</small>
+                </div>
+                <div className="stat">
+                    <b>{counts.rejected}</b>
+                    <span>Ditolak</span>
+                    <small className="muted">menunggu unggah ulang</small>
+                </div>
+            </div>
+
+            <section className="panel panel--flat">
+                <div className="panel__head" style={{ marginBottom: 14 }}>
+                    <div>
+                        <span className="kicker">Antrean</span>
+                        <h3>Saring tagihan</h3>
                     </div>
-                    <div className="rounded border border-gray-200 p-3">
-                        <p className="text-xs text-gray-500">Terbayar</p>
-                        <p className="text-xl font-semibold">{counts.paid}</p>
-                    </div>
-                    <div className="rounded border border-gray-200 p-3">
-                        <p className="text-xs text-gray-500">Ditolak</p>
-                        <p className="text-xl font-semibold">{counts.rejected}</p>
-                    </div>
+                    <button type="button" className="btn btn--clay btn--sm" onClick={applyFilters}>
+                        <SlidersHorizontal size={16} aria-hidden />
+                        Terapkan
+                    </button>
                 </div>
 
-                <div className="flex flex-wrap items-end gap-2 rounded border border-gray-200 p-3">
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Status</span>
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                        gap: 12,
+                    }}
+                >
+                    <Field label="Status" htmlFor="pay-status">
                         <select
+                            id="pay-status"
+                            className="select"
                             value={form.status}
                             onChange={(e) => setForm({ ...form, status: e.target.value })}
-                            className="mt-1 rounded border-gray-300 text-sm"
                         >
                             <option value="">Menunggu verifikasi</option>
                             <option value="unpaid">Belum dibayar</option>
@@ -178,14 +200,14 @@ export default function Index({ invoices, filters, levels, competitions, counts 
                             <option value="paid">Terbayar</option>
                             <option value="expired">Kadaluarsa</option>
                         </select>
-                    </label>
+                    </Field>
 
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Jenjang</span>
+                    <Field label="Jenjang" htmlFor="pay-level">
                         <select
+                            id="pay-level"
+                            className="select"
                             value={form.level}
                             onChange={(e) => setForm({ ...form, level: e.target.value })}
-                            className="mt-1 rounded border-gray-300 text-sm"
                         >
                             <option value="">Semua</option>
                             {levels.map((level) => (
@@ -194,14 +216,14 @@ export default function Index({ invoices, filters, levels, competitions, counts 
                                 </option>
                             ))}
                         </select>
-                    </label>
+                    </Field>
 
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Lomba</span>
+                    <Field label="Lomba" htmlFor="pay-competition">
                         <select
+                            id="pay-competition"
+                            className="select"
                             value={form.competition_id}
                             onChange={(e) => setForm({ ...form, competition_id: Number(e.target.value) })}
-                            className="mt-1 max-w-xs rounded border-gray-300 text-sm"
                         >
                             <option value={0}>Semua</option>
                             {competitions.map((competition) => (
@@ -210,191 +232,219 @@ export default function Index({ invoices, filters, levels, competitions, counts 
                                 </option>
                             ))}
                         </select>
-                    </label>
+                    </Field>
 
-                    <label className="text-sm">
-                        <span className="block text-xs text-gray-500">Cari</span>
+                    <Field label="Cari" htmlFor="pay-q">
                         <input
+                            id="pay-q"
                             type="text"
+                            className="input"
                             value={form.q}
                             onChange={(e) => setForm({ ...form, q: e.target.value })}
                             onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                             placeholder="No. tagihan / nama / total"
-                            className="mt-1 rounded border-gray-300 text-sm"
                         />
-                    </label>
-
-                    <PrimaryButton type="button" onClick={applyFilters}>
-                        Terapkan
-                    </PrimaryButton>
-
-                    <a href={exportUrl()}>
-                        <SecondaryButton type="button">Ekspor</SecondaryButton>
-                    </a>
+                    </Field>
                 </div>
+            </section>
 
-                {invoices.length === 0 && (
-                    <p className="rounded border border-gray-200 p-6 text-center text-gray-500">
-                        Tidak ada tagihan pada antrean ini.
-                    </p>
-                )}
-
-                <div className="space-y-3">
+            {invoices.length === 0 ? (
+                <EmptyState
+                    title="Antrean kosong"
+                    description="Tidak ada tagihan pada saringan ini. Ubah status atau kata kunci untuk melihat tagihan lain."
+                />
+            ) : (
+                <div className="stack">
                     {invoices.map((invoice) => (
-                        <div key={invoice.id} className="rounded border border-gray-200 p-4">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <span className="font-mono text-sm font-medium">{invoice.number}</span>
-                                <span
-                                    className={`rounded px-2 py-0.5 text-xs ring-1 ${
-                                        badge[invoice.status_color] ?? badge.gray
-                                    }`}
-                                >
-                                    {invoice.status_label}
-                                </span>
-                                <span className="text-sm text-gray-700">{invoice.owner?.name ?? '-'}</span>
-                                <span className="text-xs text-gray-500">{invoice.owner?.email}</span>
-                                <span className="ml-auto font-semibold">{formatRupiah(invoice.total)}</span>
+                        <article className="panel" key={invoice.id}>
+                            <div className="row-between">
+                                <div>
+                                    <span className="kicker">Tagihan</span>
+                                    <h3 className="tnum">{invoice.number}</h3>
+                                    <p className="small muted">
+                                        {invoice.owner?.name ?? '—'}
+                                        {invoice.owner?.email ? ` · ${invoice.owner.email}` : ''}
+                                    </p>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <p className="strong tnum" style={{ fontSize: 22 }}>
+                                        {formatRupiah(invoice.total)}
+                                    </p>
+                                    <StatusBadge value={invoice.status} label={invoice.status_label} />
+                                </div>
                             </div>
 
-                            <div className="mt-2 flex flex-wrap gap-4 text-xs text-gray-600">
-                                <span>{invoice.registrations_count ?? 0} entri</span>
+                            <div className="row-gap" style={{ marginTop: 14 }}>
+                                <span className="tag">{invoice.registrations_count ?? 0} entri</span>
                                 {invoice.proof_uploaded_at && (
-                                    <span>Bukti diunggah {formatTanggalWaktu(invoice.proof_uploaded_at)}</span>
+                                    <span className="tag">Bukti diunggah {formatTanggalWaktu(invoice.proof_uploaded_at)}</span>
                                 )}
                                 {invoice.due_at && (
-                                    <span className={invoice.is_overdue ? 'font-medium text-red-600' : ''}>
+                                    <span className={invoice.is_overdue ? 'tag tag--clay' : 'tag'}>
                                         Jatuh tempo {formatTanggalWaktu(invoice.due_at)}
                                     </span>
                                 )}
                             </div>
 
                             {invoice.rejection_reason && (
-                                <p className="mt-2 text-xs text-orange-800">
+                                <p className="small" style={{ marginTop: 10, fontWeight: 600, color: 'var(--clay-d)' }}>
                                     Alasan tolak: {invoice.rejection_reason}
                                 </p>
                             )}
 
-                            <div className="mt-3 flex flex-wrap gap-2">
+                            <div className="row-gap" style={{ marginTop: 16 }}>
                                 {invoice.has_proof && (
-                                    <SecondaryButton type="button" onClick={() => setPreview(invoice)}>
-                                        Pratinjau Bukti
-                                    </SecondaryButton>
+                                    <button type="button" className="btn btn--ghost btn--sm" onClick={() => setPreview(invoice)}>
+                                        <ImageIcon size={15} aria-hidden />
+                                        Pratinjau bukti
+                                    </button>
                                 )}
                                 {invoice.status === 'awaiting_verification' && invoice.has_proof && (
                                     <>
-                                        <PrimaryButton
+                                        <button
                                             type="button"
+                                            className="btn btn--moss btn--sm"
                                             disabled={busy}
-                                            onClick={() => verify(invoice)}
+                                            onClick={() => setAccepting(invoice)}
                                         >
+                                            <Check size={15} aria-hidden />
                                             Terima
-                                        </PrimaryButton>
-                                        <DangerButton
+                                        </button>
+                                        <button
                                             type="button"
+                                            className="btn btn--danger btn--sm"
                                             disabled={busy}
                                             onClick={() => {
                                                 setLocalError(null);
                                                 setRejecting(invoice);
                                             }}
                                         >
+                                            <X size={15} aria-hidden />
                                             Tolak
-                                        </DangerButton>
+                                        </button>
                                     </>
                                 )}
                                 {['unpaid', 'rejected'].includes(invoice.status) && (
-                                    <SecondaryButton
+                                    <button
                                         type="button"
+                                        className="btn btn--ghost btn--sm"
                                         onClick={() => {
                                             setLocalError(null);
                                             setExtending(invoice);
                                         }}
                                     >
+                                        <CalendarClock size={15} aria-hidden />
                                         Perpanjang
-                                    </SecondaryButton>
+                                    </button>
                                 )}
-                                <Link
-                                    href={route('invoices.show', invoice.id)}
-                                    className="self-center text-sm text-blue-600 hover:underline"
-                                >
-                                    Detail
+                                <Link href={route('invoices.show', invoice.id)} className="btn btn--ghost btn--sm">
+                                    <ExternalLink size={15} aria-hidden />
+                                    Detail tagihan
                                 </Link>
                             </div>
-                        </div>
+                        </article>
                     ))}
                 </div>
-            </div>
+            )}
 
-            <Modal show={preview !== null} onClose={() => setPreview(null)} maxWidth="2xl">
-                <div className="p-4">
-                    <h2 className="font-semibold">Bukti {preview?.number}</h2>
-                    {preview && (
-                        <img
-                            src={route('admin.payments.proof', preview.id)}
-                            alt={`Bukti ${preview.number}`}
-                            className="mt-3 max-h-[70vh] w-full object-contain"
-                        />
-                    )}
-                    {preview && preview.proof_uploaded_at && (
-                        <p className="mt-2 text-xs text-gray-500">
-                            Diunggah {formatTanggalWaktu(preview.proof_uploaded_at)}
-                        </p>
-                    )}
-                    <div className="mt-3 flex justify-end">
-                        <SecondaryButton type="button" onClick={() => setPreview(null)}>
-                            Tutup
-                        </SecondaryButton>
-                    </div>
-                </div>
-            </Modal>
-
-            <Modal show={rejecting !== null} onClose={() => setRejecting(null)} maxWidth="md">
-                <div className="space-y-3 p-4">
-                    <h2 className="font-semibold">Tolak Pembayaran {rejecting?.number}</h2>
-                    <p className="text-sm text-gray-600">
-                        Pengguna dapat mengunggah ulang bukti setelah penolakan.
-                    </p>
-                    <textarea
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        rows={4}
-                        placeholder="Alasan penolakan (wajib)"
-                        className="w-full rounded border-gray-300 text-sm"
+            <Modal show={preview !== null} onClose={() => setPreview(null)} title={`Bukti ${preview?.number ?? ''}`} wide>
+                {preview && (
+                    <img
+                        src={route('admin.payments.proof', preview.id)}
+                        alt={`Bukti pembayaran ${preview.number}`}
+                        style={{ marginTop: 8, width: '100%', maxHeight: '70vh', objectFit: 'contain' }}
                     />
-                    {localError && <p className="text-sm text-red-600">{localError}</p>}
-                    <div className="flex justify-end gap-2">
-                        <SecondaryButton type="button" onClick={() => setRejecting(null)}>
-                            Batal
-                        </SecondaryButton>
-                        <DangerButton type="button" disabled={busy} onClick={submitReject}>
-                            {busy ? 'Memproses...' : 'Tolak'}
-                        </DangerButton>
-                    </div>
-                </div>
+                )}
+                {preview?.proof_uploaded_at && (
+                    <p className="small muted">Diunggah {formatTanggalWaktu(preview.proof_uploaded_at)}</p>
+                )}
             </Modal>
 
-            <Modal show={extending !== null} onClose={() => setExtending(null)} maxWidth="md">
-                <div className="space-y-3 p-4">
-                    <h2 className="font-semibold">Perpanjang Jatuh Tempo {extending?.number}</h2>
-                    <label className="block text-sm">
-                        <span className="text-gray-600">Durasi (jam, 1–720)</span>
+            <ConfirmDialog
+                show={accepting !== null}
+                title="Terima pembayaran ini?"
+                message={
+                    <p>
+                        Tagihan <span className="strong tnum">{accepting?.number}</span> sebesar{' '}
+                        <span className="strong">{accepting ? formatRupiah(accepting.total) : '—'}</span> akan ditandai
+                        lunas dan pendaftaran terkait diverifikasi.
+                    </p>
+                }
+                confirmLabel="Ya, terima"
+                cancelLabel="Tidak jadi"
+                processing={busy}
+                onConfirm={() => accepting && verify(accepting)}
+                onCancel={() => setAccepting(null)}
+            />
+
+            <ConfirmDialog
+                show={rejecting !== null}
+                title={`Tolak pembayaran ${rejecting?.number ?? ''}?`}
+                message={
+                    <div className="stack-sm">
+                        <p>Pengguna dapat mengunggah ulang bukti setelah penolakan.</p>
+                        <Field
+                            label="Alasan penolakan"
+                            htmlFor="reject-reason"
+                            error={localError ?? undefined}
+                            hint="Minimal 5 karakter, dikirim ke peserta."
+                            required
+                        >
+                            <textarea
+                                id="reject-reason"
+                                className="textarea"
+                                rows={4}
+                                placeholder="Contoh: nominal transfer tidak sesuai tagihan."
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                            />
+                        </Field>
+                    </div>
+                }
+                confirmLabel="Ya, tolak"
+                cancelLabel="Tidak jadi"
+                danger
+                processing={busy}
+                onConfirm={submitReject}
+                onCancel={() => {
+                    setRejecting(null);
+                    setLocalError(null);
+                }}
+            />
+
+            <Modal show={extending !== null} onClose={() => setExtending(null)} title="Perpanjang jatuh tempo">
+                <p className="small muted">
+                    Tagihan <span className="strong tnum">{extending?.number ?? ''}</span> akan diberi tambahan waktu
+                    pembayaran.
+                </p>
+
+                <div style={{ marginTop: 16 }}>
+                    <Field
+                        label="Durasi (jam)"
+                        htmlFor="extend-hours"
+                        error={localError ?? undefined}
+                        hint="Isi 1 sampai 720 jam."
+                        required
+                    >
                         <input
+                            id="extend-hours"
                             type="number"
                             min={1}
                             max={720}
+                            className="input"
                             value={hours}
                             onChange={(e) => setHours(e.target.value)}
-                            className="mt-1 w-full rounded border-gray-300 text-sm"
                         />
-                    </label>
-                    {localError && <p className="text-sm text-red-600">{localError}</p>}
-                    <div className="flex justify-end gap-2">
-                        <SecondaryButton type="button" onClick={() => setExtending(null)}>
-                            Batal
-                        </SecondaryButton>
-                        <PrimaryButton type="button" disabled={busy} onClick={submitExtend}>
-                            {busy ? 'Memproses...' : 'Perpanjang'}
-                        </PrimaryButton>
-                    </div>
+                    </Field>
+                </div>
+
+                <div className="modal__actions">
+                    <button type="button" className="btn btn--ghost" onClick={() => setExtending(null)} disabled={busy}>
+                        Batal
+                    </button>
+                    <button type="button" className="btn btn--clay" onClick={submitExtend} disabled={busy}>
+                        {busy ? 'Memproses…' : 'Perpanjang'}
+                    </button>
                 </div>
             </Modal>
         </AuthenticatedLayout>

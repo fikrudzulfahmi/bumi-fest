@@ -1,7 +1,9 @@
-import { Head, Link, router } from '@inertiajs/react';
+import ConfirmDialog from '@/Components/app/ConfirmDialog';
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
-import DangerButton from '@/Components/DangerButton';
+import { Head, Link, router } from '@inertiajs/react';
+import { Landmark, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface BankAccount {
     id: number;
@@ -17,55 +19,132 @@ interface Props {
 }
 
 export default function Index({ accounts }: Props) {
-    const handleDelete = (id: number) => {
-        if (confirm('Hapus rekening ini?')) {
-            router.delete(route('admin.bank-accounts.destroy', id));
-        }
+    const [deleting, setDeleting] = useState<BankAccount | null>(null);
+    const [busy, setBusy] = useState(false);
+
+    const handleDelete = () => {
+        if (!deleting) return;
+        setBusy(true);
+        router.delete(route('admin.bank-accounts.destroy', deleting.id), {
+            preserveScroll: true,
+            onFinish: () => {
+                setBusy(false);
+                setDeleting(null);
+            },
+        });
     };
 
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Kelola Rekening</h1>}>
+        <AuthenticatedLayout
+            header={
+                <div>
+                    <span className="kicker">Panitia</span>
+                    <h1>Kelola Rekening</h1>
+                    <p className="muted small">Rekening tujuan transfer yang tampil pada tagihan peserta.</p>
+                </div>
+            }
+        >
             <Head title="Kelola Rekening" />
 
-            <div className="max-w-4xl mx-auto p-4">
-                <div className="mb-6">
-                    <Link href={route('admin.bank-accounts.create')}>
-                        <PrimaryButton>Tambah Rekening</PrimaryButton>
-                    </Link>
-                </div>
+            <FlashMessage />
 
-                <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-200">
+            <div className="row-between">
+                <p className="muted" style={{ fontSize: 15 }}>
+                    {accounts.length} rekening terdaftar · {accounts.filter((a) => a.is_active).length} aktif
+                </p>
+                <Link href={route('admin.bank-accounts.create')} className="btn btn--clay btn--sm">
+                    <Plus size={16} aria-hidden />
+                    Tambah rekening
+                </Link>
+            </div>
+
+            {accounts.length === 0 ? (
+                <EmptyState
+                    title="Belum ada rekening"
+                    description="Tambahkan rekening agar peserta tahu ke mana harus mentransfer."
+                    action={
+                        <Link href={route('admin.bank-accounts.create')} className="btn btn--sm">
+                            Tambah rekening
+                        </Link>
+                    }
+                />
+            ) : (
+                <div className="table-wrap">
+                    <table className="data">
                         <thead>
-                            <tr className="bg-gray-100">
-                                <th className="px-4 py-2 text-left">Bank</th>
-                                <th className="px-4 py-2 text-left">Nomor Rekening</th>
-                                <th className="px-4 py-2 text-left">Atas Nama</th>
-                                <th className="px-4 py-2 text-left">Status</th>
-                                <th className="px-4 py-2 text-left">Aksi</th>
+                            <tr>
+                                <th>Bank</th>
+                                <th>Nomor rekening</th>
+                                <th>Atas nama</th>
+                                <th>Urutan</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             {accounts.map((account) => (
-                                <tr key={account.id} className="border-t">
-                                    <td className="px-4 py-2">{account.bank_name}</td>
-                                    <td className="px-4 py-2">{account.account_number}</td>
-                                    <td className="px-4 py-2">{account.account_holder}</td>
-                                    <td className="px-4 py-2">
-                                        {account.is_active ? 'Aktif' : 'Nonaktif'}
+                                <tr key={account.id}>
+                                    <td data-label="Bank" className="strong">
+                                        <span className="row-gap" style={{ gap: 8 }}>
+                                            <Landmark size={15} aria-hidden />
+                                            {account.bank_name}
+                                        </span>
                                     </td>
-                                    <td className="px-4 py-2 space-x-2">
-                                        <Link href={route('admin.bank-accounts.edit', account.id)} className="text-blue-600 hover:underline">
-                                            Edit
-                                        </Link>
-                                        <DangerButton onClick={() => handleDelete(account.id)}>Hapus</DangerButton>
+                                    <td data-label="Nomor rekening" className="num nowrap">
+                                        {account.account_number}
+                                    </td>
+                                    <td data-label="Atas nama">{account.account_holder}</td>
+                                    <td data-label="Urutan" className="num small">
+                                        {account.sort}
+                                    </td>
+                                    <td data-label="Status">
+                                        {account.is_active ? (
+                                            <span className="badge badge--ok">Aktif</span>
+                                        ) : (
+                                            <span className="badge badge--neutral">Nonaktif</span>
+                                        )}
+                                    </td>
+                                    <td data-label="Aksi">
+                                        <div className="row-gap" style={{ gap: 8 }}>
+                                            <Link
+                                                href={route('admin.bank-accounts.edit', account.id)}
+                                                className="btn btn--ghost btn--sm"
+                                            >
+                                                <Pencil size={15} aria-hidden />
+                                                Edit
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                className="btn btn--danger btn--sm"
+                                                onClick={() => setDeleting(account)}
+                                            >
+                                                <Trash2 size={15} aria-hidden />
+                                                Hapus
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
-            </div>
+            )}
+
+            <ConfirmDialog
+                show={deleting !== null}
+                danger
+                title="Hapus rekening?"
+                message={
+                    <p>
+                        Rekening {deleting?.bank_name ?? ''} {deleting?.account_number ?? ''} atas nama{' '}
+                        {deleting?.account_holder ?? ''} akan dihapus permanen dan tidak lagi tampil pada tagihan peserta.
+                    </p>
+                }
+                confirmLabel="Ya, hapus"
+                processing={busy}
+                onConfirm={handleDelete}
+                onCancel={() => setDeleting(null)}
+            />
         </AuthenticatedLayout>
     );
 }

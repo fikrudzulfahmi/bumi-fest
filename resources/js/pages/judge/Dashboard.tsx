@@ -1,5 +1,7 @@
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
+import { ClipboardList, Lock, PencilLine, Trophy } from 'lucide-react';
 
 interface Assignment {
     id: number;
@@ -16,72 +18,128 @@ interface Props {
 }
 
 export default function Dashboard({ assignments }: Props) {
+    const totalEntri = assignments.reduce((sum, a) => sum + a.entries_total, 0);
+    const totalTerkunci = assignments.reduce((sum, a) => sum + a.entries_locked, 0);
+
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Dasbor Juri</h1>}>
+        <AuthenticatedLayout header={<h1>Dasbor Juri</h1>}>
             <Head title="Dasbor Juri" />
 
-            <div className="mx-auto max-w-4xl space-y-4 p-4">
-                {assignments.length === 0 && (
-                    <div className="rounded border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
-                        Belum ada lomba yang ditugaskan kepada Anda. Hubungi admin bila ini keliru.
+            <FlashMessage />
+
+            <div className="stack">
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Penugasan juri</span>
+                            <h2>Lomba yang Anda nilai</h2>
+                            <p className="muted">
+                                Lembar nilai diisi per entri, lalu dikunci sebagai nilai resmi Anda. Progres dihitung dari
+                                entri terverifikasi yang sudah dikunci.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="stat-grid">
+                        <div className="stat">
+                            <b>{assignments.length}</b>
+                            <span>Cabang ditugaskan</span>
+                        </div>
+                        <div className="stat">
+                            <b>{totalEntri}</b>
+                            <span>Entri terverifikasi</span>
+                        </div>
+                        <div className="stat">
+                            <b>{totalTerkunci}</b>
+                            <span>Sudah dikunci</span>
+                        </div>
+                    </div>
+                </section>
+
+                {assignments.length === 0 ? (
+                    <div className="panel">
+                        <EmptyState
+                            title="Belum ada penugasan"
+                            description="Belum ada lomba yang ditugaskan kepada Anda. Hubungi panitia bila ini keliru."
+                        />
+                    </div>
+                ) : (
+                    <div className="stack-sm">
+                        {assignments.map((assignment) => (
+                            <section key={assignment.id} className="panel">
+                                <div className="row-between" style={{ gap: 16, flexWrap: 'wrap' }}>
+                                    <div>
+                                        <span className="kicker">
+                                            <Trophy size={12} aria-hidden style={{ verticalAlign: '-2px' }} /> Jenjang{' '}
+                                            {assignment.competition.level_label ?? assignment.competition.level}
+                                        </span>
+                                        <h3 style={{ marginTop: 6 }}>{assignment.competition.name}</h3>
+                                    </div>
+
+                                    <Link
+                                        className="btn btn--clay btn--sm"
+                                        href={route('judge.entries', assignment.competition.id)}
+                                    >
+                                        <ClipboardList size={16} aria-hidden />
+                                        Isi nilai entri
+                                    </Link>
+                                </div>
+
+                                <div style={{ marginTop: 14 }}>
+                                    <div className="row-between" style={{ marginBottom: 6 }}>
+                                        <span className="small muted">Progres penguncian</span>
+                                        <span className="small strong tnum">{assignment.progress_percent}%</span>
+                                    </div>
+                                    <div
+                                        style={{
+                                            height: 12,
+                                            border: '2px solid var(--ink)',
+                                            borderRadius: 999,
+                                            background: 'var(--sand-2)',
+                                            overflow: 'hidden',
+                                        }}
+                                        role="progressbar"
+                                        aria-valuenow={assignment.progress_percent}
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-label={`Progres ${assignment.competition.name}`}
+                                    >
+                                        <div
+                                            style={{
+                                                height: '100%',
+                                                width: `${assignment.progress_percent}%`,
+                                                background: 'var(--moss)',
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="stat-grid" style={{ marginTop: 16 }}>
+                                    <div className="stat">
+                                        <b>{assignment.entries_total}</b>
+                                        <span>Entri terverifikasi</span>
+                                    </div>
+                                    <div className="stat">
+                                        <b>{assignment.entries_locked}</b>
+                                        <span>
+                                            <Lock size={12} aria-hidden style={{ verticalAlign: '-2px' }} /> Terkunci
+                                        </span>
+                                    </div>
+                                    <div className="stat">
+                                        <b>{assignment.entries_drafted}</b>
+                                        <span>
+                                            <PencilLine size={12} aria-hidden style={{ verticalAlign: '-2px' }} /> Draf
+                                        </span>
+                                    </div>
+                                    <div className="stat">
+                                        <b>{assignment.entries_remaining}</b>
+                                        <span>Belum dinilai</span>
+                                    </div>
+                                </div>
+                            </section>
+                        ))}
                     </div>
                 )}
-
-                {assignments.map((assignment) => (
-                    <div key={assignment.id} className="rounded border border-gray-200 bg-white p-4">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                                <h2 className="text-lg font-semibold">{assignment.competition.name}</h2>
-                                <p className="text-xs text-gray-500">
-                                    Jenjang {assignment.competition.level_label}
-                                </p>
-                            </div>
-                            <span className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">
-                                {assignment.progress_percent}% terkunci
-                            </span>
-                        </div>
-
-                        <div className="mt-3">
-                            <Link
-                                href={route('judge.entries', assignment.competition.id)}
-                                className="inline-flex min-h-11 items-center rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
-                            >
-                                Isi nilai entri
-                            </Link>
-                        </div>
-
-                        <div className="mt-3 h-2 w-full overflow-hidden rounded bg-gray-100">
-                            <div
-                                className="h-2 rounded bg-emerald-500"
-                                style={{ width: `${assignment.progress_percent}%` }}
-                            />
-                        </div>
-
-                        <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-                            <div>
-                                <dt className="text-xs text-gray-500">Entri terverifikasi</dt>
-                                <dd className="font-medium">{assignment.entries_total}</dd>
-                            </div>
-                            <div>
-                                <dt className="text-xs text-gray-500">Terkunci</dt>
-                                <dd className="font-medium text-emerald-700">{assignment.entries_locked}</dd>
-                            </div>
-                            <div>
-                                <dt className="text-xs text-gray-500">Draf</dt>
-                                <dd className="font-medium text-amber-700">{assignment.entries_drafted}</dd>
-                            </div>
-                            <div>
-                                <dt className="text-xs text-gray-500">Belum dinilai</dt>
-                                <dd className="font-medium text-gray-700">{assignment.entries_remaining}</dd>
-                            </div>
-                        </dl>
-                    </div>
-                ))}
-
-                <p className="text-xs text-gray-500">
-                    Lembar nilai diisi dari menu penilaian setiap entri. Progres dihitung dari entri terverifikasi
-                    yang sudah dikunci.
-                </p>
             </div>
         </AuthenticatedLayout>
     );

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\Level;
 use App\Enums\RegistrationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
@@ -42,6 +43,7 @@ class DashboardController extends Controller
                 'id' => (int) $row->competition_id,
                 'name' => (string) $row->competition_name,
                 'level' => (string) $row->competition_level,
+                'level_label' => Level::tryFrom((string) $row->competition_level)?->label() ?? (string) $row->competition_level,
                 'quota' => $row->competition_quota === null ? null : (int) $row->competition_quota,
                 'registrations_count' => (int) $row->registrations_count,
             ])

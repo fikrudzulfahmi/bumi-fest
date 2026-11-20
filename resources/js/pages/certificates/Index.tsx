@@ -1,5 +1,8 @@
+import FlashMessage, { EmptyState } from '@/Components/app/FlashMessage';
+import StatusBadge from '@/Components/app/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
+import { Download, FileArchive, Medal, ShieldCheck } from 'lucide-react';
 
 interface CertificateItem {
     id: number;
@@ -17,67 +20,114 @@ interface Props {
     can_zip: boolean;
 }
 
+function tanggal(value: string | null): string {
+    if (!value) {
+        return '—';
+    }
+
+    return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 export default function Index({ certificates, can_zip }: Props) {
+    const winners = certificates.filter((cert) => cert.type === 'winner').length;
+
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-bold">Sertifikat</h1>}>
+        <AuthenticatedLayout header={<h1>Sertifikat</h1>}>
             <Head title="Sertifikat" />
 
-            <div className="mx-auto max-w-4xl space-y-4 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm text-gray-600">Unduh sertifikat Anda setelah hasil lomba diterbitkan.</p>
-                    {can_zip && (
-                        <Link
-                            href={route('certificates.download-all')}
-                            className="min-h-11 rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
-                        >
-                            Unduh Semua (ZIP)
-                        </Link>
-                    )}
-                </div>
+            <FlashMessage />
 
-                {certificates.length === 0 && (
-                    <div className="rounded border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
-                        Belum ada sertifikat. Sertifikat dibuat setelah hasil lomba diterbitkan oleh panitia.
+            <div className="stack">
+                <section className="panel">
+                    <div className="panel__head">
+                        <div>
+                            <span className="kicker">Piagam digital</span>
+                            <h2>Sertifikat Anda</h2>
+                            <p className="muted">
+                                Sertifikat terbit setelah panitia mengumumkan hasil lomba. Unduh berkas PDF untuk
+                                disimpan atau dicetak.
+                            </p>
+                        </div>
+                        {can_zip && (
+                            <Link className="btn btn--moss btn--sm" href={route('certificates.download-all')}>
+                                <FileArchive size={16} aria-hidden />
+                                Unduh semua (ZIP)
+                            </Link>
+                        )}
+                    </div>
+
+                    {certificates.length > 0 && (
+                        <div className="stat-grid">
+                            <div className="stat">
+                                <b>{certificates.length}</b>
+                                <span>Sertifikat tersedia</span>
+                            </div>
+                            <div className="stat">
+                                <b>{winners}</b>
+                                <span>Sertifikat juara</span>
+                                <small>{certificates.length - winners} partisipasi</small>
+                            </div>
+                        </div>
+                    )}
+                </section>
+
+                {certificates.length === 0 ? (
+                    <div className="panel">
+                        <EmptyState
+                            title="Belum ada sertifikat"
+                            description="Sertifikat dibuat setelah hasil lomba diterbitkan oleh panitia. Pantau halaman hasil pada portal lomba."
+                            action={
+                                <Link className="btn btn--sm" href={route('portal.index')}>
+                                    <ShieldCheck size={16} aria-hidden />
+                                    Buka portal lomba
+                                </Link>
+                            }
+                        />
+                    </div>
+                ) : (
+                    <div className="stack-sm">
+                        {certificates.map((cert) => (
+                            <section key={cert.id} className="panel">
+                                <div className="row-between" style={{ gap: 16, flexWrap: 'wrap' }}>
+                                    <div style={{ minWidth: 0 }}>
+                                        <div className="row-gap" style={{ gap: 8 }}>
+                                            <StatusBadge
+                                                value={cert.type}
+                                                label={
+                                                    cert.placement !== null
+                                                        ? `${cert.type_label} — Juara ${cert.placement}`
+                                                        : cert.type_label
+                                                }
+                                            />
+                                            <span className="tnum small muted">{cert.number}</span>
+                                        </div>
+
+                                        <h3 style={{ marginTop: 10 }}>
+                                            {cert.participant_name ?? '—'}
+                                            {cert.placement !== null && (
+                                                <span className="tag tag--saffron" style={{ marginLeft: 10 }}>
+                                                    <Medal size={14} aria-hidden />
+                                                    Peringkat {cert.placement}
+                                                </span>
+                                            )}
+                                        </h3>
+                                        <p className="small muted" style={{ marginTop: 4 }}>
+                                            {cert.competition_name ?? '—'} · terbit {tanggal(cert.generated_at)}
+                                        </p>
+                                    </div>
+
+                                    <Link
+                                        className="btn btn--clay btn--sm"
+                                        href={route('certificates.download', cert.id)}
+                                    >
+                                        <Download size={16} aria-hidden />
+                                        Unduh PDF
+                                    </Link>
+                                </div>
+                            </section>
+                        ))}
                     </div>
                 )}
-
-                <ul className="space-y-3">
-                    {certificates.map((cert) => (
-                        <li key={cert.id} className="rounded border border-gray-200 bg-white p-4">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span
-                                            className={`rounded px-2 py-1 text-xs font-medium ${
-                                                cert.type === 'winner'
-                                                    ? 'bg-amber-100 text-amber-900'
-                                                    : 'bg-blue-100 text-blue-800'
-                                            }`}
-                                        >
-                                            {cert.type_label}
-                                            {cert.placement !== null && ` — Juara ${cert.placement}`}
-                                        </span>
-                                        <span className="font-mono text-xs text-gray-500">{cert.number}</span>
-                                    </div>
-                                    <h2 className="mt-2 text-base font-semibold">{cert.participant_name ?? '—'}</h2>
-                                    <p className="text-sm text-gray-600">{cert.competition_name ?? '—'}</p>
-                                    {cert.generated_at && (
-                                        <p className="text-xs text-gray-400">
-                                            Terbit {new Date(cert.generated_at).toLocaleDateString('id-ID')}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <Link
-                                    href={route('certificates.download', cert.id)}
-                                    className="min-h-11 rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
-                                >
-                                    Unduh PDF
-                                </Link>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
             </div>
         </AuthenticatedLayout>
     );
