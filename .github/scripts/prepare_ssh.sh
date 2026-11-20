@@ -53,7 +53,6 @@ if [ "$OK" = 0 ]; then
 fi
 
 if [ "$OK" = 0 ]; then
-  echo "::error title=SSH_KEY RUSAK::Secret SSH_KEY tidak valid/terpotong."
   ERR1=$(ssh-keygen -y -f /tmp/k1 2>&1 | head -c 300 | tr '\n' ' ')
   echo "::error title=DIAG key1::${ERR1:-<kosong>}"
   if [ -f /tmp/k2 ]; then
@@ -64,7 +63,22 @@ if [ "$OK" = 0 ]; then
     ERR3=$(ssh-keygen -y -f /tmp/k3 2>&1 | head -c 300 | tr '\n' ' ')
     echo "::error title=DIAG key3::${ERR3:-<kosong>}"
   fi
-  echo "::warning title=PETUNJUK::Pastikan key di-generate dengan ssh-keygen -t ed25519 -N \"\" (tanpa passphrase), lalu: cat ~/.ssh/bumi_deploy | base64 -w0, paste UTUH sebagai SSH_KEY."
+
+  # Kasus paling umum: key valid tapi BER-PASSPHRASE (SSH non-interaktif tak bisa buka).
+  if printf '%s' "$ERR1" | grep -qiE 'passphrase|decrypt private key'; then
+    echo "::error title=SSH_KEY BER-PASSPHRASE::Key valid tetapi dikunci passphrase. Non-interaktif tak bisa membukanya."
+    echo "::warning title=PERBAIKAN::Di laptop: ssh-keygen -p -f ~/.ssh/bumi_deploy -N \"\"  (kosongkan passphrase), lalu cat ~/.ssh/bumi_deploy | base64 -w0 dan ganti SSH_KEY."
+    exit 1
+  fi
+
+  if printf '%s' "$ERR1" | grep -qiE 'invalid format|error in libcrypto|bad base64'; then
+    echo "::error title=SSH_KEY RUSAK::Isi key tidak utuh (terpotong/malformed)."
+    echo "::warning title=PERBAIKAN::ssh-keygen -t ed25519 -f ~/.ssh/bumi_deploy -N \"\" lalu cat ~/.ssh/bumi_deploy | base64 -w0."
+    exit 1
+  fi
+
+  echo "::error title=SSH_KEY DITOLAK::Tidak bisa membaca key (lihat DIAG di atas)."
+  echo "::warning title=PETUNJUK::ssh-keygen -t ed25519 -f ~/.ssh/bumi_deploy -N \"\" (tanpa passphrase), lalu cat ~/.ssh/bumi_deploy | base64 -w0, paste UTUH."
   exit 1
 fi
 
