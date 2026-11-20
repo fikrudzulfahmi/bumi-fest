@@ -128,11 +128,11 @@ Sudah diuji: `ssh-keygen -y` membaca key tanpa meminta passphrase.
 
 | Name | Secret (isi) |
 |---|---|
-| `SSH_HOST` | IP/hostname server (dari A1) |
-| `SSH_USER` | username cPanel (dari A1) |
-| `SSH_KEY` | output base64 satu baris dari B4 |
+| `SSH_HOST` | `ingintau.my.id` |
+| `SSH_USER` | `ingintau` |
+| `SSH_KEY` | base64 satu baris `~/.ssh/bumi_deploy` |
 | `SSH_PORT` | `22` |
-| `DEPLOY_PATH` | `bumi-fest` |
+| `DEPLOY_PATH` | `bumi-fest` (sesuaikan nama folder hasil clone di A4) |
 
 ---
 
