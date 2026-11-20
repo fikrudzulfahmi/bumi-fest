@@ -6,6 +6,7 @@ use App\Services\Whatsapp\LogWhatsappGateway;
 use App\Services\Whatsapp\NullWhatsappGateway;
 use App\Services\Whatsapp\WhatsappGateway;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -31,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // cPanel/MariaDB dengan row-format COMPACT punya batas index 767 byte;
+        // 191 × 4 (utf8mb4) = 764 → aman. Melengkapi 'engine' => InnoDB.
+        Schema::defaultStringLength(191);
 
         // Prevent lazy loading in non-production
         if (! app()->isProduction()) {
