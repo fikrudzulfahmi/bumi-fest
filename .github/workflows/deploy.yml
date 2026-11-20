@@ -24,6 +24,8 @@ jobs:
           cache: 'npm'
 
       - name: Build assets
+        env:
+          VITE_APP_NAME: 'Bumi Fest'
         run: |
           npm ci
           npm run build
