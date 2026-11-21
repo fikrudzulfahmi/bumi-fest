@@ -144,8 +144,11 @@ export default function Home({ event_name, competitions, stats, faqs, can_login 
                                 <SiswiPutri className="c-kid" />
                             </div>
                             <div className="c-card">
-                                <small>Tiket peserta</small>
-                                <b>BUMI 27</b>
+                                <div className="c-card-main">
+                                    <small>Tiket peserta</small>
+                                    <b>BUMI 27</b>
+                                </div>
+                                <div className="c-card-perf" />
                                 <span>
                                     <CalendarDays size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> Jadwal menyusul
                                 </span>
