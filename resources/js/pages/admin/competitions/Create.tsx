@@ -2,6 +2,7 @@ import Field from '@/Components/app/Field';
 import FlashMessage from '@/Components/app/FlashMessage';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
+import { useEffect } from 'react';
 
 interface Level {
     value: string;
@@ -23,25 +24,49 @@ type FormData = {
     submission_mode: string;
 };
 
+const draftKey = 'bumi-fest:admin-competition-create-draft';
+
+const emptyForm: FormData = {
+    level: '',
+    name: '',
+    slug: '',
+    description: '',
+    category: 'individual',
+    fee: 0,
+    quota: '',
+    team_min: '',
+    team_max: '',
+    opens_at: '',
+    closes_at: '',
+    submission_mode: 'none',
+};
+
+function recoveredDraft(): FormData {
+    try {
+        const saved = window.sessionStorage.getItem(draftKey);
+
+        if (!saved) {
+            return emptyForm;
+        }
+
+        return { ...emptyForm, ...JSON.parse(saved) };
+    } catch {
+        return emptyForm;
+    }
+}
+
 export default function Create({ levels }: { levels: Level[] }) {
-    const { data, setData, post, processing, errors } = useForm<FormData>({
-        level: '',
-        name: '',
-        slug: '',
-        description: '',
-        category: 'individual',
-        fee: 0,
-        quota: '',
-        team_min: '',
-        team_max: '',
-        opens_at: '',
-        closes_at: '',
-        submission_mode: 'none',
-    });
+    const { data, setData, post, processing, errors } = useForm<FormData>(recoveredDraft());
+
+    useEffect(() => {
+        window.sessionStorage.setItem(draftKey, JSON.stringify(data));
+    }, [data]);
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('admin.competitions.store'));
+        post(route('admin.competitions.store'), {
+            onSuccess: () => window.sessionStorage.removeItem(draftKey),
+        });
     };
 
     return (
