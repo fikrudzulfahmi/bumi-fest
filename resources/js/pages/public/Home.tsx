@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowRight, CalendarDays, MapPin, Ticket } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { SiswaPutra, SiswiPutri } from '@/Components/illustrations/SiswaSd';
 
 interface Competition {
     id: number;
@@ -138,7 +139,10 @@ export default function Home({ event_name, competitions, stats, faqs, can_login 
                         <div className="collage" aria-hidden="true">
                             <div className="c-arch" />
                             <div className="c-sun" />
-                            <div className="c-leaf" />
+                            <div className="c-kids">
+                                <SiswaPutra className="c-kid" />
+                                <SiswiPutri className="c-kid" />
+                            </div>
                             <div className="c-card">
                                 <small>Tiket peserta</small>
                                 <b>BUMI 27</b>
